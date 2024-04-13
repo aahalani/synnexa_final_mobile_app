@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 export default function Example() {
   const [form, setForm] = useState({
@@ -17,64 +18,66 @@ export default function Example() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Image
-            alt="App Logo"
-            resizeMode="contain"
-            style={styles.headerImg}
-            // path to your logo ../assets/logo.png
-            source={require("../assets/tutor_logo.png")}
-          />
-          {/* <Text should be styles.tutor but  color: '#075eec'*/}
-          <Text style={styles.title1}>Synnexa Tutor</Text>
-          <Text style={styles.title}>Sign in</Text>
-
-          <Text style={styles.subtitle}>
-            Sign in to get access to your account
-          </Text>
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.input}>
-            <Text style={styles.inputLabel}>Username</Text>
-
-            <TextInput
-              autoCapitalize="none"
-              autoCorrect={false}
-              onChangeText={(username) => setForm({ ...form, username })}
-              placeholder="johndoe"
-              placeholderTextColor="#6b7280"
-              style={styles.inputControl}
-              value={form.username}
+        <KeyboardAwareScrollView>
+          <View style={styles.header}>
+            <Image
+              alt="App Logo"
+              resizeMode="contain"
+              style={styles.headerImg}
+              // path to your logo ../assets/logo.png
+              source={require("../assets/tutor_logo.png")}
             />
+            {/* <Text should be styles.tutor but  color: '#075eec'*/}
+            <Text style={styles.title1}>Synnexa Tutor</Text>
+            <Text style={styles.title}>Sign in</Text>
+
+            <Text style={styles.subtitle}>
+              Sign in to get access to your account
+            </Text>
           </View>
 
-          <View style={styles.input}>
-            <Text style={styles.inputLabel}>Password</Text>
+          <View style={styles.form}>
+            <View style={styles.input}>
+              <Text style={styles.inputLabel}>Username</Text>
 
-            <TextInput
-              autoCorrect={false}
-              onChangeText={(password) => setForm({ ...form, password })}
-              placeholder="********"
-              placeholderTextColor="#6b7280"
-              style={styles.inputControl}
-              secureTextEntry={true}
-              value={form.password}
-            />
-          </View>
+              <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                onChangeText={(username) => setForm({ ...form, username })}
+                placeholder="johndoe"
+                placeholderTextColor="#6b7280"
+                style={styles.inputControl}
+                value={form.username}
+              />
+            </View>
 
-          <View style={styles.formAction}>
-            <TouchableOpacity
-              onPress={() => {
-                // handle onPress
-              }}
-            >
-              <View style={styles.btn}>
-                <Text style={styles.btnText}>Sign in</Text>
-              </View>
-            </TouchableOpacity>
+            <View style={styles.input}>
+              <Text style={styles.inputLabel}>Password</Text>
+
+              <TextInput
+                autoCorrect={false}
+                onChangeText={(password) => setForm({ ...form, password })}
+                placeholder="********"
+                placeholderTextColor="#6b7280"
+                style={styles.inputControl}
+                secureTextEntry={true}
+                value={form.password}
+              />
+            </View>
+
+            <View style={styles.formAction}>
+              <TouchableOpacity
+                onPress={() => {
+                  // handle onPress
+                }}
+              >
+                <View style={styles.btn}>
+                  <Text style={styles.btnText}>Sign in</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </KeyboardAwareScrollView>
       </View>
     </SafeAreaView>
   );
