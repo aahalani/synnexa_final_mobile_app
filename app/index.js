@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   TextInput,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { router } from "expo-router";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 export default function Example() {
@@ -15,6 +17,7 @@ export default function Example() {
     username: "",
     password: "",
   });
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.container}>
@@ -68,7 +71,7 @@ export default function Example() {
             <View style={styles.formAction}>
               <TouchableOpacity
                 onPress={() => {
-                  // handle onPress
+                  router.replace("/(tabs)/home");
                 }}
               >
                 <View style={styles.btn}>
