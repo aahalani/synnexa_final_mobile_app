@@ -15,6 +15,18 @@ const _layout = () => {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="(tabs)"
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="(auth)"
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 };
