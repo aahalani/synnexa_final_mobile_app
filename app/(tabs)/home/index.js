@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 20,
-    fontFamily: "SourceCodeProRegular",
+    fontFamily: "SourceCodeBold",
   },
   boxContainer: {
     flexDirection: "row",

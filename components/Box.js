@@ -1,16 +1,16 @@
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
 import { Feather, AntDesign } from "@expo/vector-icons";
 
 const Box = ({ icon, title, subtitle, color }) => {
   return (
-    <View style={[styles.box, { backgroundColor: color }]}>
+    <TouchableOpacity style={[styles.box, { backgroundColor: color }]}>
       <View style={{ marginLeft: 5 }}>
         <Feather name={icon} size={24} color="black" />
       </View>
       <Text style={styles.boxTitle}>{title}</Text>
       <Text style={styles.boxSubtitle}>{subtitle}</Text>
-    </View>
+    </TouchableOpacity>
   );
 };
 
