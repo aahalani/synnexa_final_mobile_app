@@ -13,7 +13,7 @@ const SplashScreen = () => {
         const user = await AsyncStorage.getItem("user");
 
         // Wait for a minimum of 5 seconds
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         if (user) {
           navigation.replace("(tabs)");
