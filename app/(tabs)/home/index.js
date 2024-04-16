@@ -126,7 +126,7 @@ export default function Page() {
         <Box
           icon="message-square"
           title="Feedback"
-          subtitle="View your feedback"
+          subtitle="View your feedbacks"
           color="#EBE5FF"
         />
       </View>
@@ -150,6 +150,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-
   },
 });
