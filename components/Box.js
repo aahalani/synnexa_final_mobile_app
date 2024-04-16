@@ -34,7 +34,7 @@ const styles = {
     height: 165,
     borderRadius: 30,
     padding: 20,
-    marginBottom: 10,
+    marginBottom: 20,
   },
   boxTitle: {
     fontSize: 16,

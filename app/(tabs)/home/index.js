@@ -5,6 +5,7 @@ import {
   Button,
   StyleSheet,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
@@ -48,7 +49,7 @@ export default function Page() {
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
-          marginBottom: 20,
+          marginBottom: 40,
         }}
       >
         {/* Make a small box gray background a simple student logo */}
@@ -73,11 +74,11 @@ export default function Page() {
           </Text>
           {/* Add profile button here with the initials (First and Last) of the user make it round */}
         </View>
-        <View
+        <TouchableOpacity
           style={{
             backgroundColor: "#E1E2FF",
             padding: 15,
-            borderRadius: "50%",
+            borderRadius: 100,
           }}
         >
           <Text
@@ -90,7 +91,7 @@ export default function Page() {
             {user?.charAt(0).toUpperCase() +
               user?.charAt(user.indexOf(" ") + 1)}
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
       {/* <Text style={styles.header}> */}
       {/* //     Hello, {user?.charAt(0).toUpperCase() + user?.slice(1)}
@@ -149,6 +150,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: 20,
+
   },
 });
