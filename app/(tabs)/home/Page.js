@@ -1,16 +1,10 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  Button,
-  StyleSheet,
-  ActivityIndicator,
-} from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { View, Text, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { Feather, AntDesign } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import * as Font from "expo-font";
 import Box from "../../../components/Box";
+import { styles } from ".";
 
 export default function Page() {
   const [user, setUser] = useState(null);
@@ -52,11 +46,11 @@ export default function Page() {
         }}
       >
         {/* Make a small box gray background a simple student logo */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
           <View
             style={{
               backgroundColor: "#F4F5FA",
-              padding: 15,
+              padding: 10,
               borderRadius: 10,
             }}
           >
@@ -66,42 +60,40 @@ export default function Page() {
           <Text
             style={{
               fontFamily: "OxygenBold",
-              fontSize: 18,
+              fontSize: 16,
             }}
           >
-            {user}
+            Hello, {}
           </Text>
-          {/* Add profile button here with the initials (First and Last) of the user make it round */}
+          {/* Add profile button here with the initials of the user make it round */}
         </View>
         <View
           style={{
             backgroundColor: "#E1E2FF",
-            padding: 15,
-            borderRadius: "50%",
+            padding: 10,
+            borderRadius: 50,
           }}
         >
           <Text
             style={{
               color: "#484A79",
               fontFamily: "OxygenBold",
-              fontSize: 16,
             }}
           >
-            {user?.charAt(0).toUpperCase() +
-              user?.charAt(user.indexOf(" ") + 1)}
+            {user?.charAt(0).toUpperCase()}
           </Text>
         </View>
       </View>
       {/* <Text style={styles.header}> */}
       {/* //     Hello, {user?.charAt(0).toUpperCase() + user?.slice(1)}
-    //   </Text>
-    //   <View
-    //     style={{
-    //       borderBottomColor: "#666",
-    //       borderBottomWidth: 1,
-    //       marginBottom: 20,
-    //     }}
-    //   /> */}
+          //   </Text>
+          //   <View
+          //     style={{
+          //       borderBottomColor: "#666",
+          //       borderBottomWidth: 1,
+          //       marginBottom: 20,
+          //     }}
+          //   /> */}
 
       <View style={styles.boxContainer}>
         <Box
@@ -132,23 +124,3 @@ export default function Page() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#fff",
-  },
-  header: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 20,
-    fontFamily: "HalveticaRegular",
-  },
-  boxContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-});

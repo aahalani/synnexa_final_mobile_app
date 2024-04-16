@@ -1,9 +1,23 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Feather, AntDesign } from "@expo/vector-icons";
+import * as Font from "expo-font";
 
 const Box = ({ icon, title, subtitle, color }) => {
-  return (
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const _loadAssetsAsync = async () => {
+    await Font.loadAsync({
+      OxygenRegular: require("../assets/Oxygen-Regular.ttf"),
+      OxygenBold: require("../assets/Oxygen-Bold.ttf"),
+    });
+    setAssetsLoaded(true);
+  };
+
+  useEffect(() => {
+    _loadAssetsAsync();
+  }, []);
+
+  return assetsLoaded ? (
     <TouchableOpacity style={[styles.box, { backgroundColor: color }]}>
       <View style={{ marginLeft: 5 }}>
         <Feather name={icon} size={24} color="black" />
@@ -11,13 +25,13 @@ const Box = ({ icon, title, subtitle, color }) => {
       <Text style={styles.boxTitle}>{title}</Text>
       <Text style={styles.boxSubtitle}>{subtitle}</Text>
     </TouchableOpacity>
-  );
+  ) : null;
 };
 
 const styles = {
   box: {
-    width: "47%",
-    height: 150,
+    width: "48%",
+    height: 165,
     borderRadius: 30,
     padding: 20,
     marginBottom: 10,
@@ -25,14 +39,14 @@ const styles = {
   boxTitle: {
     fontSize: 16,
     fontFamily: "SansBold",
-    marginTop: 10,
+    marginTop: 15,
     marginLeft: 5,
   },
   boxSubtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#666",
-    fontFamily: "SansRegular",
-    marginTop: 10,
+    fontFamily: "OxygenRegular",
+    marginTop: 15,
     marginLeft: 5,
   },
 };
