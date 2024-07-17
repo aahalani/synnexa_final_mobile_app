@@ -60,30 +60,56 @@ export default function _layout() {
             borderRadius: 10,
           },
         }}
+        initialRouteName="home"
       >
+        <Tabs.Screen
+          name="lecture"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="filetext1" />
+            ),
+            tabBarLabel: () => null,
+            headerTitle: "Lecture",
+          }}
+        />
+        <Tabs.Screen
+          name="attendance"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="calendar" />
+            ),
+            tabBarLabel: () => null,
+            headerTitle: "Academics",
+          }}
+        />
         <Tabs.Screen
           name="home"
           options={{
             tabBarIcon: ({ focused }) => (
               <TabIcon focused={focused} iconName="home" />
             ),
-            tabBarLabel: ({ focused }) => (
-              <TabLabel focused={focused} text="Home" />
-            ),
+            tabBarLabel: () => null,
             headerTitle: "Home",
           }}
         />
-
         <Tabs.Screen
-          name="more"
+          name="assignment"
           options={{
             tabBarIcon: ({ focused }) => (
-              <TabIcon focused={focused} iconName="bars" />
+              <TabIcon focused={focused} iconName="book" />
             ),
-            tabBarLabel: ({ focused }) => (
-              <TabLabel focused={focused} text="More" />
+            tabBarLabel: () => null,
+            headerTitle: "Assignment",
+          }}
+        />
+        <Tabs.Screen
+          name="fees"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="creditcard" />
             ),
-            headerTitle: "More",
+            tabBarLabel: () => null,
+            headerTitle: "Fees",
           }}
         />
       </Tabs>

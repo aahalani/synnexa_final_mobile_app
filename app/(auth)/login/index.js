@@ -7,21 +7,37 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { loginApi } from "../../../api/loginApi";
 
 export default function Example() {
   const [form, setForm] = useState({
     username: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
 
   const login = async () => {
-    await AsyncStorage.setItem("user", form.username);
-    router.replace("/(tabs)/home");
+    setLoading(true);
+    try {
+      const response = await loginApi(form.username, form.password);
+      if (response.wasSuccessful) {
+        await AsyncStorage.setItem("user", form.username);
+        router.replace("/(tabs)/home");
+      } else {
+        Alert.alert("Error", response.message);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,11 +88,14 @@ export default function Example() {
                 value={form.password}
               />
             </View>
-
             <View style={styles.formAction}>
-              <TouchableOpacity onPress={login}>
+              <TouchableOpacity onPress={login} disabled={loading}>
                 <View style={styles.btn}>
-                  <Text style={styles.btnText}>Sign in</Text>
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.btnText}>Sign in</Text>
+                  )}
                 </View>
               </TouchableOpacity>
             </View>
@@ -183,8 +202,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 30,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    height: 50,
     borderWidth: 1,
     backgroundColor: "#1B4A99",
     borderColor: "#075eec",

@@ -37,13 +37,13 @@ const styles = {
     marginBottom: 20,
   },
   boxTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: "SansBold",
     marginTop: 15,
     marginLeft: 5,
   },
   boxSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#666",
     fontFamily: "OxygenRegular",
     marginTop: 15,
