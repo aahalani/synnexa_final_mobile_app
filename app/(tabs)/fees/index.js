@@ -1,132 +1,46 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, FlatList } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  ActivityIndicator,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ENDPOINTS, getConfig } from "../../../config";
+import { useState } from "react";
+import { useEffect } from "react";
 
 const FeesScreen = () => {
-  const paymentDto = {
-    courseDto: {
-      courseId: 0,
-      code: null,
-      name: null,
-      description: null,
-      hours: null,
-      credits: null,
-      comments: null,
-      isActive: null,
-      isActiveId: 0,
-      branchId: 0,
-      createdOn: "0001-01-01T00:00:00",
-      modifiedOn: null,
-      createdBy: 0,
-      modifiedBy: null,
-      isSelected: false,
-      courseDisplayName: null,
-    },
-    attendanceOverviewDtoList: [],
-    attendanceDetailsDtoList: [],
-    paymentDto: {
-      paymentId: 1,
-      studentId: 1,
-      receiptNo: "RECEIPT-1-0001",
-      actualAmt: 2000.0,
-      discountPercent: 5.0,
-      finalAmt: 1900.0,
-      createdBy: 1,
-      createdOn: "2024-03-30T19:33:05.997",
-      modifiedBy: null,
-      modifiedOn: null,
-      paymentLogDtoList: [
-        {
-          paymentLogId: "f7b309b8-1583-4bae-8fb5-6004b614c59b",
-          paymentId: 1,
-          paymentDate: "2024-03-30T00:00:00",
-          paymentDateStr: "30/03/2024",
-          amtPaid: 430.0,
-          paymentModeId: 22,
-          balanceAmt: 1020.0,
-          isActive: true,
-          createdBy: 1,
-          createdOn: "2024-03-30T19:33:51.137",
-          modifiedBy: null,
-          modifiedOn: null,
-          paymentModeDisplayName: "Google Pay",
-        },
-        {
-          paymentLogId: "401c77b2-8831-44a1-885b-b4aaae1bd5e1",
-          paymentId: 1,
-          paymentDate: "2024-04-02T00:00:00",
-          paymentDateStr: "02/04/2024",
-          amtPaid: 420.0,
-          paymentModeId: 23,
-          balanceAmt: 600.0,
-          isActive: true,
-          createdBy: 1,
-          createdOn: "2024-04-15T22:27:56.52",
-          modifiedBy: null,
-          modifiedOn: null,
-          paymentModeDisplayName: "Phone Pe",
-        },
-        {
-          paymentLogId: "bfe330fd-e0c4-4a5d-87ec-d2609127a175",
-          paymentId: 1,
-          paymentDate: "2024-03-29T00:00:00",
-          paymentDateStr: "29/03/2024",
-          amtPaid: 450.0,
-          paymentModeId: 21,
-          balanceAmt: 1450.0,
-          isActive: true,
-          createdBy: 1,
-          createdOn: "2024-03-30T19:33:29.827",
-          modifiedBy: null,
-          modifiedOn: null,
-          paymentModeDisplayName: "Cash",
-        },
-      ],
-      studentRegistrationDto: {
-        studentId: 0,
-        titleId: 0,
-        lastName: null,
-        firstName: null,
-        nickName: null,
-        maidenName: null,
-        addr1: null,
-        addr2: null,
-        districtId: 0,
-        stateId: 0,
-        zipcode: null,
-        mobileNo: null,
-        genderId: 0,
-        dateOfBirth: "0001-01-01T00:00:00",
-        dateOfBirthStr: "",
-        emailId: null,
-        fatherName: null,
-        fatherMobileNo: null,
-        fatherEmailId: null,
-        motherName: null,
-        motherMobileNo: null,
-        motherEmailId: null,
-        stuNum: null,
-        isActive: false,
-        comment: null,
-        registrationDate: "0001-01-01T00:00:00",
-        registrationDateStr: "",
-        photoId: "00000000-0000-0000-0000-000000000000",
-        createdOn: "0001-01-01T00:00:00",
-        modifiedOn: null,
-        isActiveId: 0,
-        admissionTo: 0,
-        courseDtoList: [],
-        studentFullName: "",
-        password: null,
-        branchId: 0,
-        studentCourseId: "00000000-0000-0000-0000-000000000000",
-        stateName: null,
-        districtName: null,
-      },
-    },
-    lectureContentDtoList: [],
-    assignmentDtoList: [],
+  const [paymentDto, setPaymentDto] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    const token = await AsyncStorage.getItem("token");
+    const userId = await AsyncStorage.getItem("userId");
+    const headers = getConfig(token, userId).headers;
+
+    const response = await fetch(
+      `${ENDPOINTS.GET_ATTENDANCE}?` +
+        new URLSearchParams({
+          tabConstant: "Fees",
+        }).toString(),
+      {
+        headers,
+      }
+    ).then((res) => res.json());
+
+    console.log(response);
+    setPaymentDto(response);
+    setIsLoading(false);
+    console.log("paymentDto", paymentDto);
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const renderPaymentLogItem = ({ item }) => (
     <View style={styles.paymentLogItem}>
@@ -142,6 +56,14 @@ const FeesScreen = () => {
       </View>
     </View>
   );
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#333" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>

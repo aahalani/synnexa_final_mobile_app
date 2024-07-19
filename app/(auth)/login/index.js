@@ -10,11 +10,11 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { loginApi } from "../../../api/loginApi";
+import { ENDPOINTS, getConfig } from "../../../config";
+import Icon from "react-native-vector-icons/Feather";
 
 export default function Example() {
   const [form, setForm] = useState({
@@ -22,14 +22,35 @@ export default function Example() {
     password: "",
   });
   const [loading, setLoading] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   const login = async () => {
     setLoading(true);
     try {
-      const response = await loginApi(form.username, form.password);
+      const response = await fetch(ENDPOINTS.LOGIN_USER, {
+        ...getConfig(),
+        method: "POST",
+        body: JSON.stringify(form),
+      }).then((res) => res.json());
+
+      console.log(response);
+
       if (response.wasSuccessful) {
-        await AsyncStorage.setItem("user", form.username);
-        router.replace("/(tabs)/home");
+        await AsyncStorage.setItem(
+          "userId",
+          response.data.userDto.userId.toString()
+        );
+        await AsyncStorage.setItem("userName", response.data.userDto.username);
+        await AsyncStorage.setItem("token", response.data.token);
+        await AsyncStorage.setItem(
+          "role",
+          response.data.userDto.selectedRoleDto.roleName
+        );
+        if (response.data.userDto.isActive) {
+          router.replace("/(tabs)/home");
+        } else {
+          Alert.alert("Error", "Your account is not active");
+        }
       } else {
         Alert.alert("Error", response.message);
       }
@@ -77,17 +98,29 @@ export default function Example() {
 
             <View style={styles.input}>
               <Text style={styles.inputLabel}>Password</Text>
-
-              <TextInput
-                autoCorrect={false}
-                onChangeText={(password) => setForm({ ...form, password })}
-                placeholder="********"
-                placeholderTextColor="#6b7280"
-                style={styles.inputControl}
-                secureTextEntry={true}
-                value={form.password}
-              />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  autoCorrect={false}
+                  onChangeText={(password) => setForm({ ...form, password })}
+                  placeholder="********"
+                  placeholderTextColor="#6b7280"
+                  style={styles.passwordInput}
+                  secureTextEntry={!passwordVisible}
+                  value={form.password}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setPasswordVisible(!passwordVisible)}
+                >
+                  <Icon
+                    name={passwordVisible ? "eye-off" : "eye"}
+                    size={24}
+                    color="#6b7280"
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
+
             <View style={styles.formAction}>
               <TouchableOpacity onPress={login} disabled={loading}>
                 <View style={styles.btn}>
@@ -212,5 +245,24 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     fontWeight: "600",
     color: "#fff",
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#C9D3DB",
+  },
+  passwordInput: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#222",
+  },
+  eyeIcon: {
+    padding: 10,
   },
 });

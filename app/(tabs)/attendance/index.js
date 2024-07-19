@@ -5,136 +5,53 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ENDPOINTS, getConfig } from "../../../config";
+import { useEffect, useState } from "react";
 
 const AttendanceScreen = () => {
-  const data = {
-    courseDto: {
-      courseId: 0,
-      code: null,
-      name: null,
-      description: null,
-      hours: null,
-      credits: null,
-      comments: null,
-      isActive: null,
-      isActiveId: 0,
-      branchId: 0,
-      createdOn: "0001-01-01T00:00:00",
-      modifiedOn: null,
-      createdBy: 0,
-      modifiedBy: null,
-      isSelected: false,
-      courseDisplayName: null,
-    },
-    attendanceOverviewDtoList: [
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    const token = await AsyncStorage.getItem("token");
+    const userId = await AsyncStorage.getItem("userId");
+    const headers = getConfig(token, userId).headers;
+
+    const response = await fetch(
+      `${ENDPOINTS.GET_ATTENDANCE}?` +
+        new URLSearchParams({
+          tabConstant: "Attendance",
+        }).toString(),
       {
-        studentId: 1,
-        courseId: 2,
-        courseCode: "001",
-        courseName: "Azure Development",
-        batchId: 1,
-        batchCode: "BAT-001",
-        batchName: "Batch for 10th Class Students",
-        startDate: "2024-02-01T00:00:00",
-        endDate: "2024-05-15T00:00:00",
-        presentCount: 18,
-        absentCount: 3,
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 4,
-        courseCode: "002",
-        courseName: "Azure API Management",
-        batchId: 2,
-        batchCode: "BAT-002",
-        batchName: "10th Afternoon Batch",
-        startDate: "2024-03-05T00:00:00",
-        endDate: "2024-04-03T00:00:00",
-        presentCount: 0,
-        absentCount: 0,
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 6,
-        courseCode: "003",
-        courseName: "Azure Key VAULT",
-        batchId: 1,
-        batchCode: "BAT-001",
-        batchName: "Batch for 10th Class Students",
-        startDate: "2024-02-04T00:00:00",
-        endDate: "2024-02-29T00:00:00",
-        presentCount: 2,
-        absentCount: 14,
-        attendancePercentage: null,
-      },
-    ],
-    attendanceDetailsDtoList: [],
-    paymentDto: {
-      paymentId: 0,
-      studentId: 0,
-      receiptNo: null,
-      actualAmt: 0,
-      discountPercent: 0,
-      finalAmt: 0,
-      createdBy: 0,
-      createdOn: "0001-01-01T00:00:00",
-      modifiedBy: null,
-      modifiedOn: null,
-      paymentLogDtoList: [],
-      studentRegistrationDto: {
-        studentId: 0,
-        titleId: 0,
-        lastName: null,
-        firstName: null,
-        nickName: null,
-        maidenName: null,
-        addr1: null,
-        addr2: null,
-        districtId: 0,
-        stateId: 0,
-        zipcode: null,
-        mobileNo: null,
-        genderId: 0,
-        dateOfBirth: "0001-01-01T00:00:00",
-        dateOfBirthStr: "",
-        emailId: null,
-        fatherName: null,
-        fatherMobileNo: null,
-        fatherEmailId: null,
-        motherName: null,
-        motherMobileNo: null,
-        motherEmailId: null,
-        stuNum: null,
-        isActive: false,
-        comment: null,
-        registrationDate: "0001-01-01T00:00:00",
-        registrationDateStr: "",
-        photoId: "00000000-0000-0000-0000-000000000000",
-        createdOn: "0001-01-01T00:00:00",
-        modifiedOn: null,
-        isActiveId: 0,
-        admissionTo: 0,
-        courseDtoList: [],
-        studentFullName: "",
-        password: null,
-        branchId: 0,
-        studentCourseId: "00000000-0000-0000-0000-000000000000",
-        stateName: null,
-        districtName: null,
-      },
-    },
-    lectureContentDtoList: [],
-    assignmentDtoList: [],
+        headers,
+      }
+    ).then((res) => res.json());
+
+    console.log(response);
+    setData(response);
+    setIsLoading(false);
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   const calculateAttendancePercentage = (present, absent) => {
     const total = present + absent;
     return total > 0 ? ((present / total) * 100).toFixed(1) : 0;
   };
 
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#333" />
+      </View>
+    );
+  }
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.header}>Attendance Overview</Text>

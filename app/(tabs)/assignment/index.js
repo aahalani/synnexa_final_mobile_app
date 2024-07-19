@@ -7,218 +7,44 @@ import {
   FlatList,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ENDPOINTS, getConfig } from "../../../config";
 
 const height = Dimensions.get("window").height;
 
 const AssignmentScreen = () => {
-  const data = {
-    courseDto: {
-      courseId: 0,
-      code: null,
-      name: null,
-      description: null,
-      hours: null,
-      credits: null,
-      comments: null,
-      isActive: null,
-      isActiveId: 0,
-      branchId: 0,
-      createdOn: "0001-01-01T00:00:00",
-      modifiedOn: null,
-      createdBy: 0,
-      modifiedBy: null,
-      isSelected: false,
-      courseDisplayName: null,
-    },
-    attendanceOverviewDtoList: [],
-    attendanceDetailsDtoList: [],
-    paymentDto: {
-      paymentId: 0,
-      studentId: 0,
-      receiptNo: null,
-      actualAmt: 0,
-      discountPercent: 0,
-      finalAmt: 0,
-      createdBy: 0,
-      createdOn: "0001-01-01T00:00:00",
-      modifiedBy: null,
-      modifiedOn: null,
-      paymentLogDtoList: [],
-      studentRegistrationDto: {
-        studentId: 0,
-        titleId: 0,
-        lastName: null,
-        firstName: null,
-        nickName: null,
-        maidenName: null,
-        addr1: null,
-        addr2: null,
-        districtId: 0,
-        stateId: 0,
-        zipcode: null,
-        mobileNo: null,
-        genderId: 0,
-        dateOfBirth: "0001-01-01T00:00:00",
-        dateOfBirthStr: "",
-        emailId: null,
-        fatherName: null,
-        fatherMobileNo: null,
-        fatherEmailId: null,
-        motherName: null,
-        motherMobileNo: null,
-        motherEmailId: null,
-        stuNum: null,
-        isActive: false,
-        comment: null,
-        registrationDate: "0001-01-01T00:00:00",
-        registrationDateStr: "",
-        photoId: "00000000-0000-0000-0000-000000000000",
-        createdOn: "0001-01-01T00:00:00",
-        modifiedOn: null,
-        isActiveId: 0,
-        admissionTo: 0,
-        courseDtoList: [],
-        studentFullName: "",
-        password: null,
-        branchId: 0,
-        studentCourseId: "00000000-0000-0000-0000-000000000000",
-        stateName: null,
-        districtName: null,
-      },
-    },
-    lectureContentDtoList: [],
-    assignmentDtoList: [
+
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    const token = await AsyncStorage.getItem("token");
+    const userId = await AsyncStorage.getItem("userId");
+    const headers = getConfig(token, userId).headers;
+
+    const response = await fetch(
+      `${ENDPOINTS.GET_ATTENDANCE}?` +
+        new URLSearchParams({
+          tabConstant: "Submission",
+        }).toString(),
       {
-        assignmentId: 20,
-        batchId: 1,
-        courseId: 2,
-        fromDate: "2024-07-03T00:00:00",
-        toDate: "2024-07-03T00:00:00",
-        outOff: 0,
-        assignmentDetails: "hi",
-        remark: "shj",
-        createdBy: 2,
-        createdOn: "2024-07-03T15:36:08.977",
-        modifiedBy: 2,
-        modifiedOn: "2024-07-03T15:36:13.983",
-        batchName: "BAT-001",
-        courseName: "Azure Development",
-        assignmentDateFromToStr: "03/07/2024-03/07/2024",
-        fromDateStr: "03 July, 2024",
-        toDateStr: "03 July, 2024",
-        assignmentCreatedDateStr: "03 July, 2024",
-        assignmentCreatedTimeStr: "03:36 PM",
-        isStudentAssignmetSubmitted: false,
-        obtainedMarks: null,
-        facultyRemark: null,
-        status: null,
-        facultyId: 1,
-        assignmentUploadDtoList: [],
-      },
-      {
-        assignmentId: 19,
-        batchId: 1,
-        courseId: 6,
-        fromDate: "2024-05-07T00:00:00",
-        toDate: "2024-05-10T00:00:00",
-        outOff: 70,
-        assignmentDetails: "Javascript Array Assignment",
-        remark: "ABCD",
-        createdBy: 4,
-        createdOn: "2024-05-04T21:13:49.067",
-        modifiedBy: 4,
-        modifiedOn: "2024-05-04T21:13:49.067",
-        batchName: "BAT-001",
-        courseName: "Azure Key VAULT",
-        assignmentDateFromToStr: "07/05/2024-10/05/2024",
-        fromDateStr: "07 May, 2024",
-        toDateStr: "10 May, 2024",
-        assignmentCreatedDateStr: "04 May, 2024",
-        assignmentCreatedTimeStr: "09:13 PM",
-        isStudentAssignmetSubmitted: false,
-        obtainedMarks: null,
-        facultyRemark: null,
-        status: null,
-        facultyId: 4,
-        assignmentUploadDtoList: [
-          {
-            assignmentUploadId: "aea659a0-67db-494f-b737-007668944e9b",
-            assignmentId: 19,
-            originalFileName: "1.jpg",
-            fileExtension: ".jpg",
-            fileSizeBytes: 22255,
-            fileContentType: "image/jpeg",
-            uploadedOn: "2024-05-04T15:44:15.32",
-          },
-          {
-            assignmentUploadId: "2f3964ba-f9d2-45c4-8bae-62e47a6c25bf",
-            assignmentId: 19,
-            originalFileName: "2.jpg",
-            fileExtension: ".jpg",
-            fileSizeBytes: 67080,
-            fileContentType: "image/jpeg",
-            uploadedOn: "2024-05-04T15:44:17.837",
-          },
-          {
-            assignmentUploadId: "3c85e876-cc43-47e8-8023-717b10b760a0",
-            assignmentId: 19,
-            originalFileName: "sign.jpg",
-            fileExtension: ".jpg",
-            fileSizeBytes: 6602,
-            fileContentType: "image/jpeg",
-            uploadedOn: "2024-05-04T15:44:19.12",
-          },
-          {
-            assignmentUploadId: "e7af4a74-a7bc-4de2-915d-f8ad26a715a8",
-            assignmentId: 19,
-            originalFileName: "photo.jpg",
-            fileExtension: ".jpg",
-            fileSizeBytes: 19738,
-            fileContentType: "image/jpeg",
-            uploadedOn: "2024-05-04T15:44:18.087",
-          },
-          {
-            assignmentUploadId: "af1ca9a1-4397-4c2d-8da5-f978636af0e3",
-            assignmentId: 19,
-            originalFileName: "1 - Copy.jpg",
-            fileExtension: ".jpg",
-            fileSizeBytes: 22255,
-            fileContentType: "image/jpeg",
-            uploadedOn: "2024-05-04T15:44:16.567",
-          },
-        ],
-      },
-      {
-        assignmentId: 18,
-        batchId: 2,
-        courseId: 4,
-        fromDate: "2024-04-27T00:00:00",
-        toDate: "2024-04-27T00:00:00",
-        outOff: 100,
-        assignmentDetails: "enter for testing purpose 4",
-        remark: "enter for testing purpose remark 4",
-        createdBy: 4,
-        createdOn: "2024-04-27T14:36:41.53",
-        modifiedBy: 4,
-        modifiedOn: "2024-04-27T14:36:41.53",
-        batchName: "BAT-002",
-        courseName: "Azure API Management",
-        assignmentDateFromToStr: "27/04/2024-27/04/2024",
-        fromDateStr: "27 April, 2024",
-        toDateStr: "27 April, 2024",
-        assignmentCreatedDateStr: "27 April, 2024",
-        assignmentCreatedTimeStr: "02:36 PM",
-        isStudentAssignmetSubmitted: false,
-        obtainedMarks: null,
-        facultyRemark: null,
-        status: null,
-        facultyId: 4,
-        assignmentUploadDtoList: [],
-      },
-    ],
+        headers,
+      }
+    ).then((res) => res.json());
+
+    console.log(response);
+    setData(response);
+    setIsLoading(false);
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const renderAssignmentItem = ({ item }) => (
     <View style={styles.assignmentCard}>
@@ -266,6 +92,14 @@ const AssignmentScreen = () => {
       )}
     </View>
   );
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#333" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
