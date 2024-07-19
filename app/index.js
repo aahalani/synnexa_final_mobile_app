@@ -10,13 +10,13 @@ const SplashScreen = () => {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const user = await AsyncStorage.getItem("user");
+        const user = await AsyncStorage.getItem("userLogin");
 
         // Wait for a minimum of 5 seconds
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         if (user) {
-          navigation.replace("(tabs)");
+          navigation.replace("(tabs_student)");
         } else {
           navigation.replace("(auth)");
         }

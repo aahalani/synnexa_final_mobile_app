@@ -40,14 +40,21 @@ export default function Example() {
           "userId",
           response.data.userDto.userId.toString()
         );
-        await AsyncStorage.setItem("userName", response.data.userDto.username);
+
+        const role = response.data.userDto.selectedRoleDto.roleName;
+
+        await AsyncStorage.setItem("userLogin", response.data.userDto.username);
         await AsyncStorage.setItem("token", response.data.token);
-        await AsyncStorage.setItem(
-          "role",
-          response.data.userDto.selectedRoleDto.roleName
-        );
+        await AsyncStorage.setItem("role", role);
         if (response.data.userDto.isActive) {
-          router.replace("/(tabs)/home");
+          if (role === "Tutor") {
+            router.replace("(tabs_faculty)/home");
+          }
+          if (role === "Student") {
+            router.replace("(tabs_student)/home");
+          } else {
+            Alert.alert("Error", "Something went wrong");
+          }
         } else {
           Alert.alert("Error", "Your account is not active");
         }
@@ -89,7 +96,7 @@ export default function Example() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 onChangeText={(username) => setForm({ ...form, username })}
-                placeholder="username"
+                placeholder="Username"
                 placeholderTextColor="#6b7280"
                 style={styles.inputControl}
                 value={form.username}

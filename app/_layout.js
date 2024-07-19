@@ -15,7 +15,13 @@ const _layout = () => {
         }}
       />
       <Stack.Screen
-        name="(tabs)"
+        name="(tabs_student)"
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="(tabs_faculty)"
         screenOptions={{
           headerShown: false,
         }}
