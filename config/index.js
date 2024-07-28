@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const LOCALHOST = "https://bed7-223-230-104-82.ngrok-free.app/";
+const LOCALHOST = "http://34.203.42.115/SYN_TUT_API/";
 const DOMAIN = "";
 
 export const BASE_URL = LOCALHOST;

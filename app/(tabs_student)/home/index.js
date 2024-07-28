@@ -2,21 +2,58 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  Button,
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  ScrollView,
+  Dimensions,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { Feather, AntDesign } from "@expo/vector-icons";
 import * as Font from "expo-font";
-import Box from "../../../components/Box";
+import Container from "../../../components/Container";
+
+const Card = ({ children, style }) => (
+  <View style={[styles.card, style]}>{children}</View>
+);
+
+const screenHeight = Dimensions.get("window").height;
 
 export default function Page() {
   const [user, setUser] = useState(null);
   const navigation = useNavigation();
   const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      text: "Your attendance for today is 100%.",
+      icon: "checkcircleo",
+      iconColor: "#4CAF50",
+      timestamp: "2 hours ago",
+    },
+    {
+      id: 2,
+      text: "Your fees for this month are due.",
+      icon: "exclamationcircleo",
+      iconColor: "#FF9800",
+      timestamp: "1 day ago",
+      urgent: true,
+    },
+    {
+      id: 3,
+      text: "New assignment posted for Math.",
+      icon: "book",
+      iconColor: "#2196F3",
+      timestamp: "3 days ago",
+    },
+    {
+      id: 4,
+      text: "Reminder: Submit your project by Friday.",
+      icon: "filetext1",
+      iconColor: "#9C27B0",
+      timestamp: "5 days ago",
+    },
+  ]);
 
   useEffect(() => {
     (async () => {
@@ -28,11 +65,8 @@ export default function Page() {
 
   const _loadAssetsAsync = async () => {
     await Font.loadAsync({
-      SansRegular: require("../../../assets/OpenSans-Regular.ttf"),
-      SansBold: require("../../../assets/OpenSans-Bold.ttf"),
-      SourceCodeProRegular: require("../../../assets/SourceCodePro-Regular.ttf"),
-      OxygenRegular: require("../../../assets/Oxygen-Regular.ttf"),
-      OxygenBold: require("../../../assets/Oxygen-Bold.ttf"),
+      PlusJakartaSans: require("../../../assets/PlusJakartaSans.ttf"),
+      PlusJakartaSans_Bold: require("../../../assets/PlusJakartaSans-Bold.ttf"),
     });
     setAssetsLoaded(true);
   };
@@ -41,114 +75,213 @@ export default function Page() {
     _loadAssetsAsync();
   }, []);
 
+  const renderNotification = (notification) => (
+    <Card
+      key={notification.id}
+      style={[
+        notification.urgent ? styles.urgentNotification : null,
+        {
+          marginHorizontal: 0,
+        },
+      ]}
+    >
+      <View style={styles.notificationItem}>
+        <AntDesign
+          name={notification.icon}
+          size={20}
+          color={notification.iconColor}
+          style={styles.notificationIcon}
+        />
+        <Text style={styles.notificationText}>{notification.text}</Text>
+      </View>
+      <Text style={styles.notificationTimestamp}>{notification.timestamp}</Text>
+    </Card>
+  );
+
   return !assetsLoaded ? (
     <ActivityIndicator size="large" color="#0000ff" />
   ) : (
-    <View style={styles.container}>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          marginBottom: 40,
-        }}
-      >
-        {/* Make a small box gray background a simple student logo */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <View
-            style={{
-              backgroundColor: "#F4F5FA",
-              padding: 15,
-              borderRadius: 10,
-            }}
-          >
-            <Feather name="user" size={24} color="black" />
+    <Container style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <View style={styles.headerText}>
+            <Text style={styles.welcomeText}>Welcome Back,</Text>
+            <Text style={styles.nameText}>Avval</Text>
           </View>
-          {/* Add User name here */}
-          <Text
-            style={{
-              fontFamily: "OxygenBold",
-              fontSize: 18,
-            }}
-          >
-            {user}
-          </Text>
-          {/* Add profile button here with the initials (First and Last) of the user make it round */}
+          <Feather name="user" size={25} color="#333" />
         </View>
-        <TouchableOpacity
-          style={{
-            backgroundColor: "#E1E2FF",
-            padding: 15,
-            borderRadius: 100,
-          }}
-        >
-          <Text
-            style={{
-              color: "#484A79",
-              fontFamily: "OxygenBold",
-              fontSize: 16,
-            }}
-          >
-            {user?.charAt(0).toUpperCase() +
-              user?.charAt(user.indexOf(" ") + 1)}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      {/* <Text style={styles.header}> */}
-      {/* //     Hello, {user?.charAt(0).toUpperCase() + user?.slice(1)}
-    //   </Text>
-    //   <View
-    //     style={{
-    //       borderBottomColor: "#666",
-    //       borderBottomWidth: 1,
-    //       marginBottom: 20,
-    //     }}
-    //   /> */}
+        <Text style={styles.sectionTitle}>Quick Access</Text>
 
-      <View style={styles.boxContainer}>
-        <Box
-          icon="calendar"
-          title="Attendance"
-          subtitle="Manage your attendance"
-          color="#FFF4DE"
-        />
-        <Box
-          icon="book"
-          title="Courses"
-          subtitle="View your courses"
-          color="#E8F4FF"
-        />
-        <Box
-          icon="file-text"
-          title="Results"
-          subtitle="View your results"
-          color="#E4F1DE"
-        />
-        <Box
-          icon="message-square"
-          title="Feedback"
-          subtitle="View your feedbacks"
-          color="#EBE5FF"
-        />
-      </View>
-    </View>
+        <View style={styles.iconContainer}>
+          {/* Attendance */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("attendance")}
+          >
+            <AntDesign name="checkcircleo" size={27} color="#333" />
+            <Text style={styles.iconText}>Attendance</Text>
+          </TouchableOpacity>
+
+          {/* Fees */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("fees")}
+          >
+            <AntDesign name="creditcard" size={27} color="#333" />
+            <Text style={styles.iconText}>Fees</Text>
+          </TouchableOpacity>
+
+          {/* Assignment */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("assignment")}
+          >
+            <AntDesign name="book" size={27} color="#333" />
+            <Text style={styles.iconText}>Assignment</Text>
+          </TouchableOpacity>
+
+          {/* Lecture */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("lecture")}
+          >
+            <AntDesign name="filetext1" size={27} color="#333" />
+            <Text style={styles.iconText}>Lecture</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.sectionTitle}>Latest Notifications</Text>
+        <View style={styles.notificationContainer}>
+          {notifications.slice(-3).map(renderNotification)}
+          <TouchableOpacity style={styles.viewMoreButton}>
+            <Text style={styles.viewMoreText}>View More</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.sectionTitle}>Upcoming Events</Text>
+        <Card>
+          <Text>Nothing to show here.</Text>
+        </Card>
+
+        <Text style={styles.sectionTitle}>Quick Links</Text>
+        <Card>
+          <Text>Nothing to show here.</Text>
+        </Card>
+
+        <Text style={styles.sectionTitle}>Useful Links</Text>
+        <Card>
+          <Text>Nothing to show here.</Text>
+        </Card>
+      </ScrollView>
+    </Container>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 20,
     backgroundColor: "#fff",
+    paddingBottom: screenHeight * 0.1,
   },
   header: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 20,
-    fontFamily: "HalveticaRegular",
-  },
-  boxContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
     justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  headerText: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  welcomeText: {
+    fontFamily: "PlusJakartaSans",
+    fontSize: 18,
+    marginRight: 5,
+    color: "#333",
+  },
+  nameText: {
+    fontFamily: "PlusJakartaSans_Bold",
+    fontSize: 18,
+    color: "#333",
+  },
+  sectionTitle: {
+    fontFamily: "PlusJakartaSans_Bold",
+    fontSize: 20,
+    marginBottom: 10,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    color: "#333",
+  },
+  iconContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  iconButton: {
+    alignItems: "center",
+  },
+  iconText: {
+    fontFamily: "PlusJakartaSans",
+    fontSize: 14,
+    marginTop: 5,
+    color: "#333",
+  },
+  notificationContainer: {
+    paddingHorizontal: 15,
+    marginBottom: 20,
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 10,
+    marginHorizontal: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+    elevation: 2,
+  },
+  notificationItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  notificationIcon: {
+    marginRight: 10,
+  },
+  notificationText: {
+    fontFamily: "PlusJakartaSans",
+    fontSize: 16,
+    color: "#333",
+  },
+  notificationTimestamp: {
+    fontFamily: "PlusJakartaSans",
+    fontSize: 12,
+    color: "#888",
+    marginTop: 5,
+  },
+  urgentNotification: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#FF9800",
+  },
+  viewMoreButton: {
+    backgroundColor: "#2196F3",
+    borderRadius: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    alignSelf: "center",
+    marginTop: 20,
+  },
+  viewMoreText: {
+    fontFamily: "PlusJakartaSans",
+    fontSize: 16,
+    color: "#fff",
   },
 });

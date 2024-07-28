@@ -15,10 +15,12 @@ import { useState } from "react";
 import { useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ENDPOINTS, getConfig } from "../../../config";
+import { useNavigation } from "@react-navigation/native";
 
 const height = Dimensions.get("window").height;
 
 const AssignmentScreen = () => {
+  const navigation = useNavigation();
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -43,7 +45,6 @@ const AssignmentScreen = () => {
       }
     ).then((res) => res.json());
 
-    console.log(response);
     setData(response);
     setIsLoading(false);
   };
@@ -53,7 +54,10 @@ const AssignmentScreen = () => {
   }, []);
 
   const renderAssignmentItem = ({ item }) => (
-    <View style={styles.assignmentCard}>
+    <TouchableOpacity
+      style={styles.assignmentCard}
+      onPress={() => navigation.navigate("AssignmentDetails", { ...item })}
+    >
       <View style={styles.assignmentHeader}>
         <Text style={styles.courseName}>{item.courseName}</Text>
         <Text style={styles.batchName}>{item.batchName}</Text>
@@ -96,7 +100,7 @@ const AssignmentScreen = () => {
           ))}
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 
   if (isLoading) {

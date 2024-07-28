@@ -6,7 +6,25 @@ export default function LectureLayout() {
       <Stack.Screen
         name="index"
         options={{
-          headerShown: false,
+          headerTitle: "Assignment",
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: "bold",
+            color: "#333",
+          },
+          headerBackTitleVisible: false,
+        }}
+      />
+      <Stack.Screen
+        name="AssignmentDetails"
+        options={{
+          headerTitle: "Lecture Details",
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: "bold",
+            color: "#333",
+          },
+          headerBackTitleVisible: false,
         }}
       />
     </Stack>

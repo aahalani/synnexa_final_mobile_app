@@ -79,7 +79,7 @@ export default function _layout() {
               <TabIcon focused={focused} iconName="calendar" />
             ),
             tabBarLabel: () => null,
-            headerTitle: "Academics",
+            headerTitle: "Attendance",
           }}
         />
         <Tabs.Screen
@@ -89,7 +89,7 @@ export default function _layout() {
               <TabIcon focused={focused} iconName="home" />
             ),
             tabBarLabel: () => null,
-            headerTitle: "Home",
+            headerShown: false,
           }}
         />
         <Tabs.Screen
@@ -99,7 +99,7 @@ export default function _layout() {
               <TabIcon focused={focused} iconName="book" />
             ),
             tabBarLabel: () => null,
-            headerTitle: "Assignment",
+            headerShown: false,
           }}
         />
         <Tabs.Screen

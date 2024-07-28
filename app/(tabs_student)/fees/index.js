@@ -31,14 +31,18 @@ const FeesScreen = () => {
         {
           headers,
         }
-      ).then((res) => res.json());
+      );
 
-      console.log(response);
-      setPaymentDto(response);
-      setIsLoading(false);
-      console.log("paymentDto", paymentDto);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      const data = await response.json();
+      setPaymentDto(data);
     } catch (error) {
       console.error("Error fetching data:", error);
+      setPaymentDto(null);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -72,6 +76,26 @@ const FeesScreen = () => {
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#333" />
       </View>
+    );
+  }
+
+  if (!paymentDto) {
+    return (
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#000"]}
+            tintColor="#000"
+            title="Pull to refresh"
+            titleColor="#000"
+          />
+        }
+      >
+        <Text style={styles.noDataMessage}>No fee data available.</Text>
+      </ScrollView>
     );
   }
 
@@ -123,7 +147,7 @@ const FeesScreen = () => {
       <FlatList
         data={paymentDto.paymentDto.paymentLogDtoList}
         renderItem={renderPaymentLogItem}
-        keyExtractor={(item) => item.paymentLogId}
+        keyExtractor={(item) => item.paymentLogId.toString()}
         scrollEnabled={false}
       />
     </ScrollView>
@@ -226,6 +250,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginTop: 4,
+  },
+  noDataMessage: {
+    textAlign: "center",
+    color: "#666",
+    fontSize: 16,
+    marginTop: 20,
   },
 });
 

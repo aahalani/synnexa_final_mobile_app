@@ -32,13 +32,19 @@ const LectureScreen = () => {
         {
           headers,
         }
-      ).then((res) => res.json());
+      );
 
-      console.log(response);
-      setData(response);
-      setIsLoading(false);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      const jsonData = await response.json();
+      console.log(jsonData);
+      setData(jsonData);
     } catch (error) {
       console.error("Error fetching data:", error);
+      setData(null);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -109,12 +115,16 @@ const LectureScreen = () => {
       }
     >
       <Text style={styles.header}>Lecture Content</Text>
-      <FlatList
-        data={data.lectureContentDtoList}
-        renderItem={renderLectureItem}
-        keyExtractor={(item) => item.lectureContentId}
-        scrollEnabled={false}
-      />
+      {data && data.lectureContentDtoList ? (
+        <FlatList
+          data={data.lectureContentDtoList}
+          renderItem={renderLectureItem}
+          keyExtractor={(item) => item.lectureContentId}
+          scrollEnabled={false}
+        />
+      ) : (
+        <Text style={styles.noDataMessage}>No lecture content available.</Text>
+      )}
     </ScrollView>
   );
 };
@@ -179,6 +189,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#333",
     marginLeft: 8,
+  },
+  noDataMessage: {
+    textAlign: "center",
+    color: "#666",
+    fontSize: 16,
+    marginTop: 20,
   },
 });
 
