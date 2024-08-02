@@ -157,21 +157,6 @@ export default function Page() {
             <Text style={styles.viewMoreText}>View More</Text>
           </TouchableOpacity>
         </View>
-
-        <Text style={styles.sectionTitle}>Upcoming Events</Text>
-        <Card>
-          <Text>Nothing to show here.</Text>
-        </Card>
-
-        <Text style={styles.sectionTitle}>Quick Links</Text>
-        <Card>
-          <Text>Nothing to show here.</Text>
-        </Card>
-
-        <Text style={styles.sectionTitle}>Useful Links</Text>
-        <Card>
-          <Text>Nothing to show here.</Text>
-        </Card>
       </ScrollView>
     </Container>
   );
@@ -181,6 +166,8 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "#fff",
     paddingBottom: screenHeight * 0.1,
+    // align all items in the center
+    justifyContent: "center",
   },
   header: {
     flexDirection: "row",

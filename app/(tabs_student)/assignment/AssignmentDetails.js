@@ -22,6 +22,7 @@ const AssignmentDetails = () => {
   const assignment = useLocalSearchParams();
   const [submission, setSubmission] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
+  console.log(assignment.isStudentAssignmetSubmitted);
 
   const handleSubmit = () => {
     console.log("Submitting assignment:", submission);
@@ -106,15 +107,16 @@ const AssignmentDetails = () => {
             style={[
               styles.infoValue,
               {
-                color: assignment.isStudentAssignmetSubmitted
-                  ? "#4CAF50"
-                  : "#F44336",
+                color:
+                  assignment.isStudentAssignmetSubmitted === false
+                    ? "#F44336"
+                    : "#4CAF50",
               },
             ]}
           >
-            {assignment.isStudentAssignmetSubmitted
-              ? "Submitted"
-              : "Not Submitted"}
+            {assignment.isStudentAssignmetSubmitted === false
+              ? "Not Submitted"
+              : "Submitted"}
           </Text>
         </View>
       </View>
@@ -138,13 +140,6 @@ const AssignmentDetails = () => {
 
       <View style={styles.submissionContainer}>
         <Text style={styles.submissionLabel}>Your Submission:</Text>
-        <TextInput
-          style={styles.submissionInput}
-          multiline
-          placeholder="Enter your submission"
-          value={submission}
-          onChangeText={setSubmission}
-        />
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
