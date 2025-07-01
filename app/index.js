@@ -1,59 +1,57 @@
-import { View, Text, Image } from "react-native";
-import React, { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
+import { View, Image, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { getUser } from '../services/authService';
 
 const SplashScreen = () => {
-  const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
 
   useEffect(() => {
     const checkUser = async () => {
-      try {
-        const user = await AsyncStorage.getItem("userLogin");
+      // Add a small delay for the splash screen effect
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const user = await getUser();
 
-        // Wait for a minimum of 5 seconds
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        if (user) {
-          navigation.replace("(tabs_student)");
+      if (user) {
+        // User is logged in, navigate based on their role
+        const role = user.selectedRoleDto.roleName;
+        if (role === 'Tutor') {
+          navigation.replace('(tabs_faculty)');
         } else {
-          // navigation.replace("(auth)");
-          navigation.replace("(auth)");
+          navigation.replace('(tabs_student)');
         }
-      } catch (error) {
-        console.log("Error retrieving user:", error);
-      } finally {
-        setLoading(false);
+      } else {
+        // No user, navigate to the login screen
+        navigation.replace('(auth)');
       }
     };
 
     checkUser();
-  }, []);
+  }, [navigation]);
 
-  if (loading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#fff",
-        }}
-      >
-        <Image
-          source={require("../assets/fulllogo.png")}
-          style={{
-            width: 400,
-            height: 400,
-            resizeMode: "contain",
-          }}
-        />
-      </View>
-    );
-  }
-
-  return null;
+  return (
+    <View style={styles.container}>
+      <Image
+        source={require('../assets/fulllogo.png')}
+        style={styles.logo}
+      />
+    </View>
+  );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  logo: {
+    width: 400,
+    height: 400,
+    resizeMode: 'contain',
+  },
+});
 
 export default SplashScreen;

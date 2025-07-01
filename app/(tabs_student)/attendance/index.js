@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,51 +7,39 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-} from "react-native";
-import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ENDPOINTS, getConfig } from "../../../config";
+  Alert,
+} from 'react-native';
+import { router } from 'expo-router';
+import { apiFetch, ENDPOINTS } from '../../../services/apiService';
 
 const AttendanceScreen = () => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const token =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzeW5uZXhhVHV0b3JXZWJBcGlTdWJqZWN0IiwianRpIjoiYmFkOTgwYmYtYzc2MS00YjBhLWFiNDctYjNlZGE5MTEwMDhiIiwiaWF0IjoiMjcvOC8yMDI0IDg6MzY6NTVwbSIsIklkIjoiNiIsIlVzZXJOYW1lIjoiUzI0MDIwMSIsImV4cCI6MjA0MDEzMTIxNSwiaXNzIjoic3lubmV4YVR1dG9yV2ViQXBpSXNzdWVyIiwiYXVkIjoic3lubmV4YVR1dG9yV2ViQXBpQXVkaWVuY2UifQ.YNFygDgQM-PzcN-gA_GjJO-_-2GGdEFBhH3QthAuw-c";
-      const userId = 6;
-      const headers = getConfig(token, userId).headers;
-
-      const response = await fetch(
-        `${ENDPOINTS.GET_ATTENDANCE}?` +
-          new URLSearchParams({
-            tabConstant: "Attendance",
-          }).toString(),
-        {
-          headers,
-        }
-      ).then((res) => res.json());
-
-      console.log(response);
+      const endpoint = `${ENDPOINTS.STUDENT_DASHBOARD}?${new URLSearchParams({ tabConstant: 'Attendance' })}`;
+      const response = await apiFetch(endpoint);
       setData(response);
-      setIsLoading(false);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      Alert.alert('Error', 'Failed to fetch attendance data.');
+      console.error('Error fetching data:', error);
+    } finally {
       setIsLoading(false);
+      setRefreshing(false);
     }
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchData().then(() => setRefreshing(false));
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData();
+  };
+  
   const calculateAttendancePercentage = (present, absent) => {
     const total = present + absent;
     return total > 0 ? ((present / total) * 100).toFixed(1) : 0;
@@ -59,24 +47,21 @@ const AttendanceScreen = () => {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#333" />
       </View>
     );
+  }
+
+  if (!data || !data.attendanceOverviewDtoList || data.attendanceOverviewDtoList.length === 0) {
+    return <Text style={{textAlign: 'center', marginTop: 20}}>No attendance data found.</Text>;
   }
 
   return (
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={["#000"]} // For Android
-          tintColor="#000" // For iOS
-          title="Pull to refresh"
-          titleColor="#000"
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
       <Text style={styles.header}>Attendance Overview</Text>
@@ -85,7 +70,7 @@ const AttendanceScreen = () => {
           key={index}
           style={styles.courseCard}
           onPress={() => {
-            router.push("(tabs)/attendance/Details");
+            router.push('(tabs_student)/attendance/Details');
           }}
         >
           <Text style={styles.courseName}>{course.courseName}</Text>
@@ -111,7 +96,7 @@ const AttendanceScreen = () => {
             </View>
           </View>
           <Text style={styles.dateRange}>
-            {new Date(course.startDate).toLocaleDateString()} -{" "}
+            {new Date(course.startDate).toLocaleDateString()} -{' '}
             {new Date(course.endDate).toLocaleDateString()}
           </Text>
         </TouchableOpacity>
@@ -120,6 +105,7 @@ const AttendanceScreen = () => {
   );
 };
 
+// ... (your styles remain the same)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

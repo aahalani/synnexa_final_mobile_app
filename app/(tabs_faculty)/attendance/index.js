@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,39 +6,40 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-} from "react-native";
-import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ENDPOINTS, getConfig } from "../../../config";
-import { useEffect, useState } from "react";
+  RefreshControl,
+  Alert,
+} from 'react-native';
+import { router } from 'expo-router';
+import { apiFetch, ENDPOINTS } from '../../../services/apiService';
+import { COLORS } from '../../../constants';
 
 const AttendanceScreen = () => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchData = async () => {
-    const token = await AsyncStorage.getItem("token");
-    const userId = await AsyncStorage.getItem("userId");
-    const headers = getConfig(token, userId).headers;
-
-    const response = await fetch(
-      `${ENDPOINTS.GET_ATTENDANCE}?` +
-        new URLSearchParams({
-          tabConstant: "Attendance",
-        }).toString(),
-      {
-        headers,
-      }
-    ).then((res) => res.json());
-
-    console.log(response);
-    setData(response);
-    setIsLoading(false);
-  };
+  const fetchData = useCallback(async () => {
+    try {
+      const endpoint = `${ENDPOINTS.STUDENT_DASHBOARD}?${new URLSearchParams({ tabConstant: 'Attendance' })}`;
+      const response = await apiFetch(endpoint);
+      setData(response);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to fetch attendance data.');
+      console.error('Error fetching data:', error);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData();
+  };
 
   const calculateAttendancePercentage = (present, absent) => {
     const total = present + absent;
@@ -47,20 +48,28 @@ const AttendanceScreen = () => {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#333" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
+  
+  if (!data || !data.attendanceOverviewDtoList || data.attendanceOverviewDtoList.length === 0) {
+      return <Text style={{textAlign: 'center', marginTop: 20}}>No attendance data found.</Text>;
+  }
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
       <Text style={styles.header}>Attendance Overview</Text>
       {data.attendanceOverviewDtoList.map((course, index) => (
         <TouchableOpacity
           key={index}
           style={styles.courseCard}
           onPress={() => {
-            router.push("(tabs)/attendance/Details");
+            router.push('(tabs_faculty)/attendance/Details');
           }}
         >
           <Text style={styles.courseName}>{course.courseName}</Text>
@@ -86,7 +95,7 @@ const AttendanceScreen = () => {
             </View>
           </View>
           <Text style={styles.dateRange}>
-            {new Date(course.startDate).toLocaleDateString()} -{" "}
+            {new Date(course.startDate).toLocaleDateString()} -{' '}
             {new Date(course.endDate).toLocaleDateString()}
           </Text>
         </TouchableOpacity>
@@ -98,21 +107,21 @@ const AttendanceScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f8f8",
+    backgroundColor: '#f8f8f8',
     padding: 16,
   },
   header: {
     fontSize: 26,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 20,
-    color: "#333",
+    color: '#333',
   },
   courseCard: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -120,36 +129,36 @@ const styles = StyleSheet.create({
   },
   courseName: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 4,
-    color: "#333",
+    color: '#333',
   },
   batchName: {
     fontSize: 16,
-    color: "#666",
+    color: '#666',
     marginBottom: 12,
   },
   statsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
   statItem: {
-    alignItems: "center",
+    alignItems: 'center',
   },
   statValue: {
     fontSize: 22,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
   },
   statLabel: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
     marginTop: 2,
   },
   dateRange: {
     fontSize: 14,
-    color: "#999",
+    color: '#999',
   },
 });
 

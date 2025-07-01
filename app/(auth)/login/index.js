@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -9,74 +9,59 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-} from "react-native";
-import { router } from "expo-router";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ENDPOINTS, getConfig } from "../../../config";
-import Icon from "react-native-vector-icons/Feather";
+} from 'react-native';
+import { router } from 'expo-router';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import Icon from 'react-native-vector-icons/Feather';
+import { apiFetch, ENDPOINTS } from '../../../services/apiService';
+import { storeAuthData } from '../../../services/authService';
 
-export default function Example() {
+export default function LoginScreen() {
   const [form, setForm] = useState({
-    username: "",
-    password: "",
+    username: '',
+    password: '',
   });
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
-  // const login = async () => {
-  //   // dummy login redirect to student home
-
-  //   // router.replace("(tabs_student)/home");
-  // };
-
-  const login = async () => {
+  const handleLogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch(ENDPOINTS.LOGIN_USER, {
-        ...getConfig(),
-        method: "POST",
+      const response = await apiFetch(ENDPOINTS.LOGIN_USER, {
+        method: 'POST',
         body: JSON.stringify(form),
-      }).then((res) => res.json());
+      });
 
-      console.log(response);
+      if (response.wasSuccessful && response.data) {
+        const { userDto, token } = response.data;
+        const role = userDto.selectedRoleDto.roleName;
 
-      if (response.wasSuccessful) {
-        await AsyncStorage.setItem(
-          "userId",
-          response.data.userDto.userId.toString()
-        );
+        // Store token and user data
+        await storeAuthData(token, userDto);
 
-        const role = response.data.userDto.selectedRoleDto.roleName;
-
-        await AsyncStorage.setItem("userLogin", response.data.userDto.username);
-        await AsyncStorage.setItem("token", response.data.token);
-        console.log(response.data.token);
-        await AsyncStorage.setItem("role", role);
-        if (response.data.userDto.isActive) {
-          if (role === "Tutor") {
-            router.replace("(tabs_faculty)/home");
-          }
-          if (role === "Student") {
-            router.replace("(tabs_student)/home");
+        if (userDto.isActive) {
+          if (role === 'Tutor') {
+            router.replace('(tabs_faculty)/home');
+          } else if (role === 'Student') {
+            router.replace('(tabs_student)/home');
           } else {
-            Alert.alert("Error", "Something went wrong");
+            Alert.alert('Error', 'Invalid user role.');
           }
         } else {
-          Alert.alert("Error", "Your account is not active");
+          Alert.alert('Error', 'Your account is not active.');
         }
       } else {
-        Alert.alert("Error", response.message);
+        Alert.alert('Error', response.message || 'Login failed.');
       }
     } catch (error) {
-      console.error(error);
+      Alert.alert('Error', error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <View style={styles.container}>
         <KeyboardAwareScrollView>
           <View style={styles.header}>
@@ -84,12 +69,10 @@ export default function Example() {
               alt="App Logo"
               resizeMode="contain"
               style={styles.headerImg}
-              source={require("../../../assets/tutor_logo.png")}
+              source={require('../../../assets/tutor_logo.png')}
             />
-
             <Text style={styles.title1}>Synnexa Tutor</Text>
             <Text style={styles.title}>Sign in</Text>
-
             <Text style={styles.subtitle}>
               Sign in to get access to your account
             </Text>
@@ -98,7 +81,6 @@ export default function Example() {
           <View style={styles.form}>
             <View style={styles.input}>
               <Text style={styles.inputLabel}>Username</Text>
-
               <TextInput
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -127,7 +109,7 @@ export default function Example() {
                   onPress={() => setPasswordVisible(!passwordVisible)}
                 >
                   <Icon
-                    name={passwordVisible ? "eye-off" : "eye"}
+                    name={passwordVisible ? 'eye-off' : 'eye'}
                     size={24}
                     color="#6b7280"
                   />
@@ -136,7 +118,7 @@ export default function Example() {
             </View>
 
             <View style={styles.formAction}>
-              <TouchableOpacity onPress={login} disabled={loading}>
+              <TouchableOpacity onPress={handleLogin} disabled={loading}>
                 <View style={styles.btn}>
                   {loading ? (
                     <ActivityIndicator size="small" color="#fff" />
@@ -147,19 +129,9 @@ export default function Example() {
               </TouchableOpacity>
             </View>
           </View>
-          {/* Forgot Password */}
-
-          <View style={styles.formAction}>
-            <TouchableOpacity>
-              <Text style={styles.formLink}>Forgot password?</Text>
-            </TouchableOpacity>
-          </View>
         </KeyboardAwareScrollView>
       </View>
     </SafeAreaView>
-
-    // just simply redirect to student home
-
   );
 }
 
@@ -168,116 +140,94 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     paddingHorizontal: 0,
     flexGrow: 1,
-    flexShrink: 1,
-    flexBasis: 0,
   },
   title: {
     fontSize: 31,
-    fontWeight: "700",
-    color: "#1D2A32",
+    fontWeight: '700',
+    color: '#1D2A32',
     marginBottom: 6,
   },
   title1: {
     fontSize: 31,
-    fontWeight: "700",
-    color: "#1B4A99",
+    fontWeight: '700',
+    color: '#1B4A99',
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 15,
-    fontWeight: "500",
-    color: "#929292",
+    fontWeight: '500',
+    color: '#929292',
   },
-  /** Header */
   header: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     marginVertical: 36,
   },
   headerImg: {
     width: 80,
     height: 80,
-    alignSelf: "center",
+    alignSelf: 'center',
     marginBottom: 36,
   },
-  /** Form */
   form: {
     marginBottom: 24,
     paddingHorizontal: 24,
     flexGrow: 1,
-    flexShrink: 1,
-    flexBasis: 0,
   },
   formAction: {
     marginTop: 4,
   },
-  formLink: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#075eec",
-    textAlign: "center",
-  },
-  formFooter: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#222",
-    textAlign: "center",
-    letterSpacing: 0.15,
-  },
-  /** Input */
   input: {
     marginBottom: 16,
   },
   inputLabel: {
     fontSize: 17,
-    fontWeight: "600",
-    color: "#222",
+    fontWeight: '600',
+    color: '#222',
     marginBottom: 8,
   },
   inputControl: {
     height: 50,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     paddingHorizontal: 16,
     borderRadius: 12,
     fontSize: 15,
-    fontWeight: "500",
-    color: "#222",
+    fontWeight: '500',
+    color: '#222',
     borderWidth: 1,
-    borderColor: "#C9D3DB",
-    borderStyle: "solid",
+    borderColor: '#C9D3DB',
   },
-  /** Button */
   btn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 30,
     height: 50,
     borderWidth: 1,
-    backgroundColor: "#1B4A99",
-    borderColor: "#075eec",
+    backgroundColor: '#1B4A99',
+    borderColor: '#075eec',
   },
   btnText: {
     fontSize: 18,
     lineHeight: 26,
-    fontWeight: "600",
-    color: "#fff",
+    fontWeight: '600',
+    color: '#fff',
   },
   passwordContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#C9D3DB",
+    borderColor: '#C9D3DB',
   },
   passwordInput: {
     flex: 1,
     height: 50,
     paddingHorizontal: 16,
     fontSize: 15,
-    fontWeight: "500",
-    color: "#222",
+    fontWeight: '500',
+    color: '#222',
   },
   eyeIcon: {
     padding: 10,
