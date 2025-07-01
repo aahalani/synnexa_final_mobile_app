@@ -1,0 +1,4939 @@
+Next.js Project Directory Explorer
+Date: 2025-06-30 19:57:41
+Target directories: ./app, ./constants, ./config, ./components
+
+####################################################################################################
+EXPLORING DIRECTORY: /Users/avval/Desktop/SynnexaTutor copy 2/app
+####################################################################################################
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/.DS_Store
+================================================================================
+[Binary file - content not displayed]
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/index.js
+================================================================================
+import { View, Text, Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
+
+const SplashScreen = () => {
+  const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const user = await AsyncStorage.getItem("userLogin");
+
+        // Wait for a minimum of 5 seconds
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        if (user) {
+          navigation.replace("(tabs_student)");
+        } else {
+          // navigation.replace("(auth)");
+          navigation.replace("(auth)");
+        }
+      } catch (error) {
+        console.log("Error retrieving user:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUser();
+  }, []);
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#fff",
+        }}
+      >
+        <Image
+          source={require("../assets/fulllogo.png")}
+          style={{
+            width: 400,
+            height: 400,
+            resizeMode: "contain",
+          }}
+        />
+      </View>
+    );
+  }
+
+  return null;
+};
+
+export default SplashScreen;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/_layout.js
+================================================================================
+import React from "react";
+import { Stack } from "expo-router";
+
+const _layout = () => {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen
+        name="index"
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="(tabs_student)"
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="(tabs_faculty)"
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="(auth)"
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
+    </Stack>
+  );
+};
+
+export default _layout;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/.DS_Store
+================================================================================
+[Binary file - content not displayed]
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/_layout.js
+================================================================================
+import React from "react";
+import { Tabs } from "expo-router";
+import { Feather, AntDesign } from "@expo/vector-icons";
+import { FontAwesome } from "@expo/vector-icons";
+import FlashMessage from "react-native-flash-message";
+import { COLORS } from "../../constants";
+import { Platform, View, Dimensions, Text } from "react-native"; // Import Text component
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+
+const screenHeight = Dimensions.get("window").height;
+
+const TabIcon = ({ focused, iconName }) => {
+  let iconComponent;
+
+  iconComponent = (
+    <AntDesign
+      name={iconName}
+      size={focused ? 28 : 25}
+      color={focused ? COLORS.primary : COLORS.gray}
+    />
+  );
+
+  return (
+    <View style={{ alignItems: "center", justifyContent: "center" }}>
+      {iconComponent}
+    </View>
+  );
+};
+
+const TabLabel = ({ focused, text }) => {
+  return (
+    <Text
+      style={{
+        fontSize: 18, // Use the desired font size
+        paddingBottom: Platform.OS === "ios" ? 0 : 5,
+        color: focused ? COLORS.primary : COLORS.gray,
+      }}
+    >
+      {text}
+    </Text>
+  );
+};
+
+export default function _layout() {
+  const tabBarHeight = screenHeight < 700 ? 60 : 90; // Example conditional sizing
+
+  return (
+    <>
+      <Tabs
+        screenOptions={{
+          tabBarStyle: {
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            elevation: 0,
+            backgroundColor: "white",
+            borderTopColor: "transparent",
+            height: Platform.OS === "ios" ? tabBarHeight : 60,
+            borderRadius: 10,
+          },
+        }}
+        initialRouteName="home"
+      >
+        <Tabs.Screen
+          name="lecture"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="filetext1" />
+            ),
+            tabBarLabel: () => null,
+            headerTitle: "Lecture",
+          }}
+        />
+        <Tabs.Screen
+          name="attendance"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="calendar" />
+            ),
+            tabBarLabel: () => null,
+            headerTitle: "Attendance",
+          }}
+        />
+        <Tabs.Screen
+          name="home"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="home" />
+            ),
+            tabBarLabel: () => null,
+            headerShown: false,
+          }}
+        />
+        <Tabs.Screen
+          name="assignment"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="book" />
+            ),
+            tabBarLabel: () => null,
+            headerShown: false,
+          }}
+        />
+        <Tabs.Screen
+          name="fees"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="creditcard" />
+            ),
+            tabBarLabel: () => null,
+            headerTitle: "Fees",
+          }}
+        />
+      </Tabs>
+      <FlashMessage position="top" />
+    </>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/attendance/index.js
+================================================================================
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
+import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ENDPOINTS, getConfig } from "../../../config";
+
+const AttendanceScreen = () => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzeW5uZXhhVHV0b3JXZWJBcGlTdWJqZWN0IiwianRpIjoiYmFkOTgwYmYtYzc2MS00YjBhLWFiNDctYjNlZGE5MTEwMDhiIiwiaWF0IjoiMjcvOC8yMDI0IDg6MzY6NTVwbSIsIklkIjoiNiIsIlVzZXJOYW1lIjoiUzI0MDIwMSIsImV4cCI6MjA0MDEzMTIxNSwiaXNzIjoic3lubmV4YVR1dG9yV2ViQXBpSXNzdWVyIiwiYXVkIjoic3lubmV4YVR1dG9yV2ViQXBpQXVkaWVuY2UifQ.YNFygDgQM-PzcN-gA_GjJO-_-2GGdEFBhH3QthAuw-c";
+      const userId = 6;
+      const headers = getConfig(token, userId).headers;
+
+      const response = await fetch(
+        `${ENDPOINTS.GET_ATTENDANCE}?` +
+          new URLSearchParams({
+            tabConstant: "Attendance",
+          }).toString(),
+        {
+          headers,
+        }
+      ).then((res) => res.json());
+
+      console.log(response);
+      setData(response);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData().then(() => setRefreshing(false));
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const calculateAttendancePercentage = (present, absent) => {
+    const total = present + absent;
+    return total > 0 ? ((present / total) * 100).toFixed(1) : 0;
+  };
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#333" />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#000"]} // For Android
+          tintColor="#000" // For iOS
+          title="Pull to refresh"
+          titleColor="#000"
+        />
+      }
+    >
+      <Text style={styles.header}>Attendance Overview</Text>
+      {data.attendanceOverviewDtoList.map((course, index) => (
+        <TouchableOpacity
+          key={index}
+          style={styles.courseCard}
+          onPress={() => {
+            router.push("(tabs)/attendance/Details");
+          }}
+        >
+          <Text style={styles.courseName}>{course.courseName}</Text>
+          <Text style={styles.batchName}>{course.batchName}</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{course.presentCount}</Text>
+              <Text style={styles.statLabel}>Present</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{course.absentCount}</Text>
+              <Text style={styles.statLabel}>Absent</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {calculateAttendancePercentage(
+                  course.presentCount,
+                  course.absentCount
+                )}
+                %
+              </Text>
+              <Text style={styles.statLabel}>Attendance</Text>
+            </View>
+          </View>
+          <Text style={styles.dateRange}>
+            {new Date(course.startDate).toLocaleDateString()} -{" "}
+            {new Date(course.endDate).toLocaleDateString()}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f8f8",
+    padding: 16,
+  },
+  header: {
+    fontSize: 26,
+    fontWeight: "bold",
+    marginBottom: 20,
+    color: "#333",
+  },
+  courseCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  courseName: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 4,
+    color: "#333",
+  },
+  batchName: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 12,
+  },
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  statItem: {
+    alignItems: "center",
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  statLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 2,
+  },
+  dateRange: {
+    fontSize: 14,
+    color: "#999",
+  },
+});
+
+export default AttendanceScreen;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/attendance/Details.js
+================================================================================
+import React, { useMemo } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  Dimensions,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+
+const height = Dimensions.get("window").height;
+
+const Details = () => {
+  const courseData = {
+    courseDto: {
+      courseId: 2,
+      code: "001",
+      name: "Azure Development",
+      description: "Azure Description",
+      hours: 45,
+      credits: 3,
+      comments: "No Comments",
+      isActive: true,
+      isActiveId: 7,
+      branchId: 10,
+      createdOn: "2023-12-17T21:00:27.673",
+      modifiedOn: "2024-04-17T15:16:25.467",
+      createdBy: 1,
+      modifiedBy: 1,
+      isSelected: false,
+      courseDisplayName: "001-Azure Development",
+    },
+    attendanceOverviewDtoList: [],
+    attendanceDetailsDtoList: [
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-03-06T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-28T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-06T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-03-05T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: false,
+        attendanceDate: "2024-02-29T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-12T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-08T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-26T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-07T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-14T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: false,
+        attendanceDate: "2024-03-07T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-13T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-27T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-21T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-05T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-01T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-03-04T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-19T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-20T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-15T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: false,
+        attendanceDate: "2024-02-22T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+    ],
+    paymentDto: {
+      paymentId: 0,
+      studentId: 0,
+      receiptNo: null,
+      actualAmt: 0,
+      discountPercent: 0,
+      finalAmt: 0,
+      createdBy: 0,
+      createdOn: "0001-01-01T00:00:00",
+      modifiedBy: null,
+      modifiedOn: null,
+      paymentLogDtoList: [],
+      studentRegistrationDto: {
+        studentId: 0,
+        titleId: 0,
+        lastName: null,
+        firstName: null,
+        nickName: null,
+        maidenName: null,
+        addr1: null,
+        addr2: null,
+        districtId: 0,
+        stateId: 0,
+        zipcode: null,
+        mobileNo: null,
+        genderId: 0,
+        dateOfBirth: "0001-01-01T00:00:00",
+        dateOfBirthStr: "",
+        emailId: null,
+        fatherName: null,
+        fatherMobileNo: null,
+        fatherEmailId: null,
+        motherName: null,
+        motherMobileNo: null,
+        motherEmailId: null,
+        stuNum: null,
+        isActive: false,
+        comment: null,
+        registrationDate: "0001-01-01T00:00:00",
+        registrationDateStr: "",
+        photoId: "00000000-0000-0000-0000-000000000000",
+        createdOn: "0001-01-01T00:00:00",
+        modifiedOn: null,
+        isActiveId: 0,
+        admissionTo: 0,
+        courseDtoList: [],
+        studentFullName: "",
+        password: null,
+        branchId: 0,
+        studentCourseId: "00000000-0000-0000-0000-000000000000",
+        stateName: null,
+        districtName: null,
+      },
+    },
+    lectureContentDtoList: [],
+    assignmentDtoList: [],
+  };
+
+  const attendancePercentage = useMemo(() => {
+    const totalClasses = courseData.attendanceDetailsDtoList.length;
+    const presentClasses = courseData.attendanceDetailsDtoList.filter(
+      (a) => a.isPresent
+    ).length;
+    return totalClasses > 0
+      ? ((presentClasses / totalClasses) * 100).toFixed(1)
+      : 0;
+  }, [courseData.attendanceDetailsDtoList]);
+
+  const renderAttendanceItem = ({ item }) => (
+    <View style={styles.attendanceItem}>
+      <Text style={styles.attendanceDate}>
+        {new Date(item.attendanceDate).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })}
+      </Text>
+      <View
+        style={[
+          styles.attendanceStatus,
+          { backgroundColor: item.isPresent ? "#4CAF50" : "#F44336" },
+        ]}
+      >
+        <Text style={styles.attendanceStatusText}>
+          {item.isPresent ? "Present" : "Absent"}
+        </Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.courseName}>{courseData.courseDto.name}</Text>
+        <Text style={styles.courseCode}>{courseData.courseDto.code}</Text>
+      </View>
+
+      <View style={styles.infoContainer}>
+        <View style={styles.infoItem}>
+          <Ionicons name="time-outline" size={24} color="#4c669f" />
+          <Text style={styles.infoText}>
+            {courseData.courseDto.hours} hours
+          </Text>
+        </View>
+        <View style={styles.infoItem}>
+          <Ionicons name="star-outline" size={24} color="#4c669f" />
+          <Text style={styles.infoText}>
+            {courseData.courseDto.credits} credits
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.descriptionContainer}>
+        <Text style={styles.descriptionTitle}>Course Description</Text>
+        <Text style={styles.descriptionText}>
+          {courseData.courseDto.description}
+        </Text>
+      </View>
+
+      <View style={styles.attendanceOverview}>
+        <Text style={styles.attendanceOverviewLabel}>Overall Attendance</Text>
+        <View style={styles.attendancePercentageContainer}>
+          <Text style={styles.attendancePercentage}>
+            {attendancePercentage}%
+          </Text>
+          <View style={styles.attendanceBarBackground}>
+            <View
+              style={[
+                styles.attendanceBar,
+                { width: `${attendancePercentage}%` },
+              ]}
+            />
+          </View>
+        </View>
+      </View>
+
+      <Text style={styles.attendanceListHeader}>Attendance Details</Text>
+      <FlatList
+        data={courseData.attendanceDetailsDtoList}
+        renderItem={renderAttendanceItem}
+        keyExtractor={(item) => item.attendanceDate}
+        style={styles.attendanceList}
+        scrollEnabled={false}
+      />
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f8f8",
+    marginBottom: height < 700 ? 60 : 90,
+  },
+  header: {
+    padding: 20,
+  },
+  courseName: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 5,
+  },
+  courseCode: {
+    fontSize: 18,
+    color: "#000",
+  },
+  infoContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    padding: 20,
+    backgroundColor: "#fff",
+    marginTop: 20,
+    marginHorizontal: 20,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  infoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  infoText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: "#333",
+  },
+  descriptionContainer: {
+    backgroundColor: "#fff",
+    margin: 20,
+    padding: 20,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  descriptionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+  },
+  descriptionText: {
+    fontSize: 16,
+    color: "#666",
+    lineHeight: 24,
+  },
+  attendanceOverview: {
+    backgroundColor: "#fff",
+    margin: 20,
+    padding: 20,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  attendanceOverviewLabel: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+  },
+  attendancePercentageContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  attendancePercentage: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#4CAF50",
+    marginRight: 10,
+    width: 70,
+  },
+  attendanceBarBackground: {
+    flex: 1,
+    height: 10,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 5,
+  },
+  attendanceBar: {
+    height: 10,
+    backgroundColor: "#4CAF50",
+    borderRadius: 5,
+  },
+  attendanceListHeader: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 20,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  attendanceList: {
+    marginHorizontal: 20,
+    borderRadius: 15,
+  },
+  attendanceItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  attendanceDate: {
+    fontSize: 16,
+    color: "#333",
+  },
+  attendanceStatus: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+  },
+  attendanceStatusText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+});
+
+export default Details;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/attendance/_layout.js
+================================================================================
+import { Stack } from "expo-router";
+
+export default function AttendanceLayout() {
+  return (
+    <Stack>
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="Details"
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/lecture/index.js
+================================================================================
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons";
+import { ENDPOINTS, getConfig } from "../../../config";
+
+const LectureScreen = () => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzeW5uZXhhVHV0b3JXZWJBcGlTdWJqZWN0IiwianRpIjoiYTQyMzNlNTYtY2RlZS00NDk3LTlkOGEtNjU2YTc3ODhhMjE5IiwiaWF0IjoiMTEvMTgvMjAyNCAzOjI1OjQyIFBNIiwiSWQiOiI2IiwiVXNlck5hbWUiOiJTMjQwMjAxIiwiZXhwIjoxNzMxOTQ0NzQyLCJpc3MiOiJzeW5uZXhhVHV0b3JXZWJBcGlJc3N1ZXIiLCJhdWQiOiJzeW5uZXhhVHV0b3JXZWJBcGlBdWRpZW5jZSJ9.96m2XUihErp-qz-IpOtg2enSQB58bSoRw-0zR84DIh0";
+      const userId = 6;
+      const headers = getConfig(token, userId).headers;
+
+      const response = await fetch(
+        `${ENDPOINTS.GET_ATTENDANCE}?` +
+          new URLSearchParams({
+            tabConstant: "Course Content",
+          }).toString(),
+        {
+          headers,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      const jsonData = await response.json();
+      console.log(jsonData);
+      setData(jsonData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData().then(() => setRefreshing(false));
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const renderAttachmentItem = ({ item }) => (
+    <TouchableOpacity style={styles.attachmentItem}>
+      <Ionicons
+        name={
+          item.fileContentType.startsWith("image")
+            ? "image-outline"
+            : "document-outline"
+        }
+        size={24}
+        color="#4c669f"
+      />
+      <Text style={styles.attachmentName}>{item.originalFileName}</Text>
+    </TouchableOpacity>
+  );
+
+  const renderLectureItem = ({ item }) => (
+    <View style={styles.lectureCard}>
+      <View style={styles.lectureHeader}>
+        <Text style={styles.lectureTitle}>{item.lectureTitle}</Text>
+        <Text style={styles.lectureDate}>{item.lectureDateStr}</Text>
+      </View>
+      <View style={styles.attachmentsContainer}>
+        <Text style={styles.attachmentsLabel}>Attachments:</Text>
+        <FlatList
+          data={item.lectureContentUploadDtoList}
+          renderItem={renderAttachmentItem}
+          keyExtractor={(attachment) => attachment.lectureContentUploadId}
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+        />
+      </View>
+    </View>
+  );
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#333" />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#000"]}
+          tintColor="#000"
+          title="Pull to refresh"
+          titleColor="#000"
+        />
+      }
+    >
+      <Text style={styles.header}>Lecture Content</Text>
+      {data && data.lectureContentDtoList ? (
+        <FlatList
+          data={data.lectureContentDtoList}
+          renderItem={renderLectureItem}
+          keyExtractor={(item) => item.lectureContentId}
+          scrollEnabled={false}
+        />
+      ) : (
+        <Text style={styles.noDataMessage}>No lecture content available.</Text>
+      )}
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f8f8",
+    padding: 16,
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 16,
+  },
+  lectureCard: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  lectureHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  lectureTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    flex: 1,
+  },
+  lectureDate: {
+    fontSize: 14,
+    color: "#666",
+  },
+  attachmentsContainer: {
+    marginTop: 8,
+  },
+  attachmentsLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+  },
+  attachmentItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    padding: 8,
+    marginRight: 8,
+  },
+  attachmentName: {
+    fontSize: 14,
+    color: "#333",
+    marginLeft: 8,
+  },
+  noDataMessage: {
+    textAlign: "center",
+    color: "#666",
+    fontSize: 16,
+    marginTop: 20,
+  },
+});
+
+export default LectureScreen;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/lecture/_layout.js
+================================================================================
+import { Stack } from "expo-router";
+
+export default function AttendanceLayout() {
+  return (
+    <Stack>
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/home/index.js
+================================================================================
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { Feather, AntDesign } from "@expo/vector-icons";
+import * as Font from "expo-font";
+import Container from "../../../components/Container";
+
+const Card = ({ children, style }) => (
+  <View style={[styles.card, style]}>{children}</View>
+);
+
+const screenHeight = Dimensions.get("window").height;
+
+export default function Page() {
+  const [user, setUser] = useState(null);
+  const navigation = useNavigation();
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      text: "Your attendance for today is 100%.",
+      icon: "checkcircleo",
+      iconColor: "#4CAF50",
+      timestamp: "2 hours ago",
+    },
+    {
+      id: 2,
+      text: "Your fees for this month are due.",
+      icon: "exclamationcircleo",
+      iconColor: "#FF9800",
+      timestamp: "1 day ago",
+      urgent: true,
+    },
+    {
+      id: 3,
+      text: "New assignment posted for Math.",
+      icon: "book",
+      iconColor: "#2196F3",
+      timestamp: "3 days ago",
+    },
+    {
+      id: 4,
+      text: "Reminder: Submit your project by Friday.",
+      icon: "filetext1",
+      iconColor: "#9C27B0",
+      timestamp: "5 days ago",
+    },
+  ]);
+
+  useEffect(() => {
+    (async () => {
+      const user = "Avval Halani";
+      setUser(user);
+      console.log("user: ", user);
+    })();
+  }, []);
+
+  const _loadAssetsAsync = async () => {
+    await Font.loadAsync({
+      PlusJakartaSans: require("../../../assets/PlusJakartaSans.ttf"),
+      PlusJakartaSans_Bold: require("../../../assets/PlusJakartaSans-Bold.ttf"),
+    });
+    setAssetsLoaded(true);
+  };
+
+  useEffect(() => {
+    _loadAssetsAsync();
+  }, []);
+
+  const renderNotification = (notification) => (
+    <Card
+      key={notification.id}
+      style={[
+        notification.urgent ? styles.urgentNotification : null,
+        {
+          marginHorizontal: 0,
+        },
+      ]}
+    >
+      <View style={styles.notificationItem}>
+        <AntDesign
+          name={notification.icon}
+          size={20}
+          color={notification.iconColor}
+          style={styles.notificationIcon}
+        />
+        <Text style={styles.notificationText}>{notification.text}</Text>
+      </View>
+      <Text style={styles.notificationTimestamp}>{notification.timestamp}</Text>
+    </Card>
+  );
+
+  return !assetsLoaded ? (
+    <ActivityIndicator size="large" color="#0000ff" />
+  ) : (
+    <Container style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <View style={styles.headerText}>
+            <Text style={styles.welcomeText}>Welcome Back,</Text>
+            <Text style={styles.nameText}>Avval</Text>
+          </View>
+          <Feather name="user" size={25} color="#333" />
+        </View>
+        <Text style={styles.sectionTitle}>Quick Access</Text>
+
+        <View style={styles.iconContainer}>
+          {/* Attendance */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("attendance")}
+          >
+            <AntDesign name="checkcircleo" size={27} color="#333" />
+            <Text style={styles.iconText}>Attendance</Text>
+          </TouchableOpacity>
+
+          {/* Fees */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("fees")}
+          >
+            <AntDesign name="creditcard" size={27} color="#333" />
+            <Text style={styles.iconText}>Fees</Text>
+          </TouchableOpacity>
+
+          {/* Assignment */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("assignment")}
+          >
+            <AntDesign name="book" size={27} color="#333" />
+            <Text style={styles.iconText}>Assignment</Text>
+          </TouchableOpacity>
+
+          {/* Lecture */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("lecture")}
+          >
+            <AntDesign name="filetext1" size={27} color="#333" />
+            <Text style={styles.iconText}>Lecture</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.sectionTitle}>Latest Notifications</Text>
+        <View style={styles.notificationContainer}>
+          {notifications.slice(-3).map(renderNotification)}
+          <TouchableOpacity style={styles.viewMoreButton}>
+            <Text style={styles.viewMoreText}>View More</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </Container>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: "#fff",
+    paddingBottom: screenHeight * 0.1,
+    // align all items in the center
+    justifyContent: "center",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  headerText: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  welcomeText: {
+    fontFamily: "PlusJakartaSans",
+    fontSize: 18,
+    marginRight: 5,
+    color: "#333",
+  },
+  nameText: {
+    fontFamily: "PlusJakartaSans_Bold",
+    fontSize: 18,
+    color: "#333",
+  },
+  sectionTitle: {
+    fontFamily: "PlusJakartaSans_Bold",
+    fontSize: 20,
+    marginBottom: 10,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    color: "#333",
+  },
+  iconContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  iconButton: {
+    alignItems: "center",
+  },
+  iconText: {
+    fontFamily: "PlusJakartaSans",
+    fontSize: 14,
+    marginTop: 5,
+    color: "#333",
+  },
+  notificationContainer: {
+    paddingHorizontal: 15,
+    marginBottom: 20,
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 10,
+    marginHorizontal: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+    elevation: 2,
+  },
+  notificationItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  notificationIcon: {
+    marginRight: 10,
+  },
+  notificationText: {
+    fontFamily: "PlusJakartaSans",
+    fontSize: 16,
+    color: "#333",
+  },
+  notificationTimestamp: {
+    fontFamily: "PlusJakartaSans",
+    fontSize: 12,
+    color: "#888",
+    marginTop: 5,
+  },
+  urgentNotification: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#FF9800",
+  },
+  viewMoreButton: {
+    backgroundColor: "#2196F3",
+    borderRadius: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    alignSelf: "center",
+    marginTop: 20,
+  },
+  viewMoreText: {
+    fontFamily: "PlusJakartaSans",
+    fontSize: 16,
+    color: "#fff",
+  },
+});
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/home/_layout.js
+================================================================================
+import { Stack } from "expo-router";
+
+export default function HomeLayout() {
+  return (
+    <Stack>
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/fees/index.js
+================================================================================
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ENDPOINTS, getConfig } from "../../../config";
+
+const FeesScreen = () => {
+  const [paymentDto, setPaymentDto] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzeW5uZXhhVHV0b3JXZWJBcGlTdWJqZWN0IiwianRpIjoiYmFkOTgwYmYtYzc2MS00YjBhLWFiNDctYjNlZGE5MTEwMDhiIiwiaWF0IjoiMjcvOC8yMDI0IDg6MzY6NTVwbSIsIklkIjoiNiIsIlVzZXJOYW1lIjoiUzI0MDIwMSIsImV4cCI6MjA0MDEzMTIxNSwiaXNzIjoic3lubmV4YVR1dG9yV2ViQXBpSXNzdWVyIiwiYXVkIjoic3lubmV4YVR1dG9yV2ViQXBpQXVkaWVuY2UifQ.YNFygDgQM-PzcN-gA_GjJO-_-2GGdEFBhH3QthAuw-c";
+      const userId = 6;
+      const headers = getConfig(token, userId).headers;
+
+      const response = await fetch(
+        `${ENDPOINTS.GET_ATTENDANCE}?` +
+          new URLSearchParams({
+            tabConstant: "Fees",
+          }).toString(),
+        {
+          headers,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      const data = await response.json();
+      setPaymentDto(data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setPaymentDto(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData().then(() => setRefreshing(false));
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const renderPaymentLogItem = ({ item }) => (
+    <View style={styles.paymentLogItem}>
+      <View style={styles.paymentLogLeft}>
+        <Text style={styles.paymentLogDate}>{item.paymentDateStr}</Text>
+        <Text style={styles.paymentLogMode}>{item.paymentModeDisplayName}</Text>
+      </View>
+      <View style={styles.paymentLogRight}>
+        <Text style={styles.paymentLogAmount}>₹{item.amtPaid.toFixed(2)}</Text>
+        <Text style={styles.paymentLogBalance}>
+          Balance: ₹{item.balanceAmt.toFixed(2)}
+        </Text>
+      </View>
+    </View>
+  );
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#333" />
+      </View>
+    );
+  }
+
+  if (!paymentDto) {
+    return (
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#000"]}
+            tintColor="#000"
+            title="Pull to refresh"
+            titleColor="#000"
+          />
+        }
+      >
+        <Text style={styles.noDataMessage}>No fee data available.</Text>
+      </ScrollView>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#000"]}
+          tintColor="#000"
+          title="Pull to refresh"
+          titleColor="#000"
+        />
+      }
+    >
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Fees Overview</Text>
+        <Text style={styles.receiptNo}>{paymentDto.receiptNo}</Text>
+      </View>
+
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Total Fee</Text>
+          <Text style={styles.summaryValue}>
+            ₹{paymentDto.paymentDto.actualAmt.toFixed(2)}
+          </Text>
+        </View>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Discount</Text>
+          <Text style={styles.summaryValue}>
+            {paymentDto.paymentDto.discountPercent}%
+          </Text>
+        </View>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Final Amount</Text>
+          <Text style={styles.summaryValue}>
+            ₹{paymentDto.paymentDto.finalAmt.toFixed(2)}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.paymentLogsHeader}>
+        <Ionicons name="time-outline" size={24} color="#4c669f" />
+        <Text style={styles.paymentLogsTitle}>Payment History</Text>
+      </View>
+
+      <FlatList
+        data={paymentDto.paymentDto.paymentLogDtoList}
+        renderItem={renderPaymentLogItem}
+        keyExtractor={(item) => item.paymentLogId.toString()}
+        scrollEnabled={false}
+      />
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f8f8",
+  },
+  header: {
+    padding: 20,
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#000",
+  },
+  receiptNo: {
+    fontSize: 16,
+    color: "#e0e0e0",
+    marginTop: 5,
+  },
+  summaryCard: {
+    backgroundColor: "#fff",
+    margin: 16,
+    padding: 16,
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  summaryItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  summaryLabel: {
+    fontSize: 16,
+    color: "#666",
+  },
+  summaryValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  paymentLogsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 16,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  paymentLogsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 8,
+  },
+  paymentLogItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#fff",
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  paymentLogLeft: {
+    flex: 1,
+  },
+  paymentLogRight: {
+    alignItems: "flex-end",
+  },
+  paymentLogDate: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  paymentLogMode: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+  },
+  paymentLogAmount: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4CAF50",
+  },
+  paymentLogBalance: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+  },
+  noDataMessage: {
+    textAlign: "center",
+    color: "#666",
+    fontSize: 16,
+    marginTop: 20,
+  },
+});
+
+export default FeesScreen;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/fees/_layout.js
+================================================================================
+import { Stack } from "expo-router";
+
+export default function FeesLayout() {
+  return (
+    <Stack>
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/assignment/index.js
+================================================================================
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  TouchableOpacity,
+  Dimensions,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ENDPOINTS, getConfig } from "../../../config";
+import { useNavigation } from "@react-navigation/native";
+import { LogBox } from "react-native";
+LogBox.ignoreAllLogs();
+
+const height = Dimensions.get("window").height;
+
+const AssignmentScreen = () => {
+  const navigation = useNavigation();
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    fetchData().then(() => setRefreshing(false));
+  }, []);
+
+  
+
+  const fetchData = async () => {
+    const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzeW5uZXhhVHV0b3JXZWJBcGlTdWJqZWN0IiwianRpIjoiYmFkOTgwYmYtYzc2MS00YjBhLWFiNDctYjNlZGE5MTEwMDhiIiwiaWF0IjoiMjcvOC8yMDI0IDg6MzY6NTVwbSIsIklkIjoiNiIsIlVzZXJOYW1lIjoiUzI0MDIwMSIsImV4cCI6MjA0MDEzMTIxNSwiaXNzIjoic3lubmV4YVR1dG9yV2ViQXBpSXNzdWVyIiwiYXVkIjoic3lubmV4YVR1dG9yV2ViQXBpQXVkaWVuY2UifQ.YNFygDgQM-PzcN-gA_GjJO-_-2GGdEFBhH3QthAuw-c";
+      const userId = 6;
+    const headers = getConfig(token, userId).headers;
+
+    const response = await fetch(
+      `${ENDPOINTS.GET_ATTENDANCE}?` +
+        new URLSearchParams({
+          tabConstant: "Submission",
+        }).toString(),
+      {
+        headers,
+      }
+    ).then((res) => res.json());
+
+    setData(response);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const renderAssignmentItem = ({ item }) => {
+    // Parse assignmentUploadDtoList if it's a string
+    let parsedAssignmentUploadDtoList = item.assignmentUploadDtoList;
+
+    try {
+      if (
+        typeof item.assignmentUploadDtoList === "string" &&
+        item.assignmentUploadDtoList
+      ) {
+        parsedAssignmentUploadDtoList = JSON.parse(
+          item.assignmentUploadDtoList
+        );
+      }
+    } catch (error) {
+      console.warn("Error parsing assignmentUploadDtoList:", error);
+      parsedAssignmentUploadDtoList = [];
+    }
+
+    // Create a new object with the parsed data
+    const assignmentData = {
+      ...item,
+      assignmentUploadDtoList: parsedAssignmentUploadDtoList,
+    };
+    console.log("DAT", assignmentData);
+
+    return (
+      <TouchableOpacity
+        style={styles.assignmentCard}
+        onPress={() => {
+          // Pass the raw item directly
+          navigation.navigate("AssignmentDetails", {
+            assignmentData: JSON.stringify(item),
+          });
+        }}
+      >
+        <View style={styles.assignmentHeader}>
+          <Text style={styles.courseName}>{item.courseName}</Text>
+          <Text style={styles.batchName}>{item.batchName}</Text>
+        </View>
+        <Text style={styles.assignmentDetails}>{item.assignmentDetails}</Text>
+        <View style={styles.dateContainer}>
+          <Ionicons name="calendar-outline" size={16} color="#666" />
+          <Text style={styles.dateText}>
+            {item.fromDateStr} - {item.toDateStr}
+          </Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Out of:</Text>
+          <Text style={styles.infoValue}>{item.outOff}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Status:</Text>
+          <Text
+            style={[
+              styles.infoValue,
+              {
+                color: item.isStudentAssignmetSubmitted ? "#4CAF50" : "#F44336",
+              },
+            ]}
+          >
+            {item.isStudentAssignmetSubmitted ? "Submitted" : "Not Submitted"}
+          </Text>
+        </View>
+        {parsedAssignmentUploadDtoList &&
+          parsedAssignmentUploadDtoList.length > 0 && (
+            <View style={styles.attachmentsContainer}>
+              <Text style={styles.attachmentsLabel}>Attachments:</Text>
+              {parsedAssignmentUploadDtoList.map((attachment) => (
+                <TouchableOpacity
+                  key={attachment.assignmentUploadId}
+                  style={styles.attachmentItem}
+                >
+                  <Ionicons name="document-outline" size={20} color="#4c669f" />
+                  <Text style={styles.attachmentName}>
+                    {attachment.originalFileName}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+      </TouchableOpacity>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#333" />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#000"]} // For Android
+          tintColor="#000" // For iOS
+          title="Pull to refresh"
+          titleColor="#000"
+        />
+      }
+    >
+      <Text style={styles.header}>Assignments</Text>
+      <FlatList
+        data={data.assignmentDtoList}
+        renderItem={renderAssignmentItem}
+        keyExtractor={(item) => item.assignmentId.toString()}
+        scrollEnabled={false}
+      />
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f8f8",
+    padding: 16,
+    marginBottom: height > 700 ? 100 : 80,
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 16,
+  },
+  assignmentCard: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  assignmentHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  courseName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  batchName: {
+    fontSize: 14,
+    color: "#666",
+  },
+  assignmentDetails: {
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 8,
+  },
+  dateContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  dateText: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 4,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: "#666",
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  attachmentsContainer: {
+    marginTop: 8,
+  },
+  attachmentsLabel: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 4,
+  },
+  attachmentItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  attachmentName: {
+    fontSize: 14,
+    color: "#4c669f",
+    marginLeft: 4,
+  },
+});
+
+export default AssignmentScreen;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/assignment/AssignmentDetails.js
+================================================================================
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Dimensions,
+  ActivityIndicator,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
+import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
+
+const height = Dimensions.get("window").height;
+
+const AssignmentDetails = () => {
+  const params = useLocalSearchParams();
+  const [assignment, setAssignment] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    try {
+      if (params.assignmentData) {
+        const parsedData = JSON.parse(params.assignmentData);
+        if (typeof parsedData.assignmentUploadDtoList === "string") {
+          parsedData.assignmentUploadDtoList = JSON.parse(
+            parsedData.assignmentUploadDtoList
+          );
+        }
+        setAssignment(parsedData);
+      }
+    } catch (error) {
+      console.error("Error parsing assignment data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [params.assignmentData]);
+
+  const pickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "*/*",
+        multiple: true,
+      });
+
+      console.log("DocumentPicker result:", result);
+
+      if (!result.canceled) {
+        if (result.assets && result.assets.length > 0) {
+          // Multiple files selected
+          const files = result.assets.map((asset) => ({
+            name: asset.name,
+            uri: asset.uri,
+            type: asset.mimeType,
+            size: asset.size,
+          }));
+          setSelectedFiles((prevFiles) => [...prevFiles, ...files]);
+        } else {
+          // Single file selected
+          const fileInfo = {
+            name: result.name,
+            uri: result.uri,
+            type: result.mimeType,
+            size: result.size,
+          };
+          setSelectedFiles((prevFiles) => [...prevFiles, fileInfo]);
+        }
+      } else {
+        console.log("Document picking canceled or dismissed");
+      }
+    } catch (err) {
+      console.error("Error picking document:", err);
+    }
+  };
+
+  const takePhoto = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      alert("You've refused to allow this app to access your camera!");
+      return;
+    }
+
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 1,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const fileName = `photo_${Date.now()}.jpg`;
+        const newPath = FileSystem.documentDirectory + fileName;
+
+        await FileSystem.moveAsync({
+          from: asset.uri,
+          to: newPath,
+        });
+
+        const fileInfo = {
+          name: fileName,
+          uri: newPath,
+          type: "image/jpeg",
+          size: asset.fileSize || 0,
+        };
+        setSelectedFiles((prevFiles) => [...prevFiles, fileInfo]);
+      }
+    } catch (error) {
+      console.error("Error taking photo:", error);
+      alert("Failed to capture photo. Please try again.");
+    }
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    if (selectedFiles.length === 0) {
+      alert("Please select at least one file to submit");
+      return;
+    }
+    console.log("Files to upload:", selectedFiles);
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#4c669f" />
+      </View>
+    );
+  }
+
+  if (!assignment) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text>No assignment data available</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.courseName}>{assignment.courseName}</Text>
+        <Text style={styles.batchName}>{assignment.batchName}</Text>
+      </View>
+
+      <Text style={styles.title}>{assignment.assignmentDetails}</Text>
+
+      <View style={styles.dateContainer}>
+        <Ionicons name="calendar-outline" size={20} color="#666" />
+        <Text style={styles.dateText}>
+          {assignment.fromDateStr} - {assignment.toDateStr}
+        </Text>
+      </View>
+
+      <View style={styles.infoContainer}>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Out of:</Text>
+          <Text style={styles.infoValue}>{assignment.outOff}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Status:</Text>
+          <Text
+            style={[
+              styles.infoValue,
+              {
+                color: assignment.isStudentAssignmetSubmitted
+                  ? "#4CAF50"
+                  : "#F44336",
+              },
+            ]}
+          >
+            {assignment.isStudentAssignmetSubmitted
+              ? "Submitted"
+              : "Not Submitted"}
+          </Text>
+        </View>
+      </View>
+
+      {assignment.assignmentUploadDtoList?.length > 0 && (
+        <View style={styles.attachmentsContainer}>
+          <Text style={styles.attachmentsLabel}>Attachments:</Text>
+          {assignment.assignmentUploadDtoList.map((attachment, index) => (
+            <View key={index} style={styles.attachmentItem}>
+              <Ionicons name="document-outline" size={24} color="#4c669f" />
+              <Text style={styles.attachmentName}>
+                {attachment.originalFileName}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      <View style={styles.submissionContainer}>
+        <Text style={styles.submissionLabel}>Your Submission:</Text>
+
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.filePickerButton}
+            onPress={pickDocument}
+          >
+            <Ionicons name="attach-outline" size={24} color="#fff" />
+            <Text style={styles.filePickerButtonText}>Add Files</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.cameraButton} onPress={takePhoto}>
+            <Ionicons name="camera-outline" size={24} color="#fff" />
+            <Text style={styles.filePickerButtonText}>Take Photo</Text>
+          </TouchableOpacity>
+        </View>
+
+        {selectedFiles.map((file, index) => (
+          <View key={index} style={styles.fileItem}>
+            {file.type?.startsWith("image/") ? (
+              <Image source={{ uri: file.uri }} style={styles.thumbnail} />
+            ) : (
+              <Ionicons name="document-outline" size={24} color="#4c669f" />
+            )}
+            <View style={styles.fileInfo}>
+              <Text style={styles.fileName} numberOfLines={1}>
+                {file.name}
+              </Text>
+              <Text style={styles.fileSize}>
+                {(file.size / 1024).toFixed(2)} KB
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => removeFile(index)}
+              style={styles.removeButton}
+            >
+              <Ionicons name="close-circle-outline" size={24} color="#F44336" />
+            </TouchableOpacity>
+          </View>
+        ))}
+
+        {selectedFiles.length > 0 && (
+          <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
+            <Text style={styles.submitButtonText}>Submit Files</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#fff",
+  },
+  centerContent: {
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  courseName: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  batchName: {
+    fontSize: 16,
+    color: "#666",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 16,
+  },
+  dateContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  dateText: {
+    fontSize: 16,
+    color: "#666",
+    marginLeft: 8,
+  },
+  infoContainer: {
+    backgroundColor: "#f0f0f0",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  infoLabel: {
+    fontSize: 16,
+    color: "#666",
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  attachmentsContainer: {
+    marginBottom: 16,
+  },
+  attachmentsLabel: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+  },
+  attachmentItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  attachmentName: {
+    fontSize: 16,
+    color: "#000",
+    marginLeft: 8,
+  },
+  submissionContainer: {
+    marginTop: 16,
+  },
+  submissionLabel: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  filePickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#4c669f",
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginRight: 8,
+  },
+  cameraButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#4CAF50",
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginLeft: 8,
+  },
+  filePickerButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  fileItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  fileInfo: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  fileName: {
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 2,
+  },
+  fileSize: {
+    fontSize: 12,
+    color: "#666",
+  },
+  thumbnail: {
+    width: 40,
+    height: 40,
+    borderRadius: 4,
+  },
+  removeButton: {
+    padding: 4,
+  },
+  submitButton: {
+    backgroundColor: "#4c669f",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+});
+
+export default AssignmentDetails;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_student)/assignment/_layout.js
+================================================================================
+import { Stack } from "expo-router";
+
+export default function LectureLayout() {
+  return (
+    <Stack>
+      <Stack.Screen
+        name="index"
+        options={{
+          headerTitle: "Assignment",
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: "bold",
+            color: "#333",
+          },
+          headerBackTitleVisible: false,
+        }}
+      />
+      <Stack.Screen
+        name="AssignmentDetails"
+        options={{
+          headerTitle: "Assignment Details",
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: "bold",
+            color: "#333",
+          },
+          headerBackTitleVisible: false,
+        }}
+      />
+    </Stack>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/.DS_Store
+================================================================================
+[Binary file - content not displayed]
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/_layout.js
+================================================================================
+import React from "react";
+import { Tabs } from "expo-router";
+import { Feather, AntDesign } from "@expo/vector-icons";
+import { FontAwesome } from "@expo/vector-icons";
+import FlashMessage from "react-native-flash-message";
+import { COLORS } from "../../constants";
+import { Platform, View, Dimensions, Text } from "react-native"; // Import Text component
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+
+const screenHeight = Dimensions.get("window").height;
+
+const TabIcon = ({ focused, iconName }) => {
+  let iconComponent;
+
+  iconComponent = (
+    <AntDesign
+      name={iconName}
+      size={focused ? 28 : 25}
+      color={focused ? COLORS.primary : COLORS.gray}
+    />
+  );
+
+  return (
+    <View style={{ alignItems: "center", justifyContent: "center" }}>
+      {iconComponent}
+    </View>
+  );
+};
+
+const TabLabel = ({ focused, text }) => {
+  return (
+    <Text
+      style={{
+        fontSize: 18, // Use the desired font size
+        paddingBottom: Platform.OS === "ios" ? 0 : 5,
+        color: focused ? COLORS.primary : COLORS.gray,
+      }}
+    >
+      {text}
+    </Text>
+  );
+};
+
+export default function _layout() {
+  const tabBarHeight = screenHeight < 700 ? 60 : 90; // Example conditional sizing
+
+  return (
+    <>
+      <Tabs
+        screenOptions={{
+          tabBarStyle: {
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            elevation: 0,
+            backgroundColor: "white",
+            borderTopColor: "transparent",
+            height: Platform.OS === "ios" ? tabBarHeight : 60,
+            borderRadius: 10,
+          },
+        }}
+        initialRouteName="home"
+      >
+        <Tabs.Screen
+          name="lecture"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="filetext1" />
+            ),
+            tabBarLabel: () => null,
+            headerTitle: "Lecture",
+          }}
+        />
+        <Tabs.Screen
+          name="attendance"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="calendar" />
+            ),
+            tabBarLabel: () => null,
+            headerTitle: "Academics",
+          }}
+        />
+        <Tabs.Screen
+          name="home"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="home" />
+            ),
+            tabBarLabel: () => null,
+            headerTitle: "Home",
+          }}
+        />
+        <Tabs.Screen
+          name="assignment"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="book" />
+            ),
+            tabBarLabel: () => null,
+            headerTitle: "Assignment",
+          }}
+        />
+        <Tabs.Screen
+          name="fees"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="creditcard" />
+            ),
+            tabBarLabel: () => null,
+            headerTitle: "Fees",
+          }}
+        />
+      </Tabs>
+      <FlashMessage position="top" />
+    </>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/attendance/index.js
+================================================================================
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
+import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ENDPOINTS, getConfig } from "../../../config";
+import { useEffect, useState } from "react";
+
+const AttendanceScreen = () => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    const token = await AsyncStorage.getItem("token");
+    const userId = await AsyncStorage.getItem("userId");
+    const headers = getConfig(token, userId).headers;
+
+    const response = await fetch(
+      `${ENDPOINTS.GET_ATTENDANCE}?` +
+        new URLSearchParams({
+          tabConstant: "Attendance",
+        }).toString(),
+      {
+        headers,
+      }
+    ).then((res) => res.json());
+
+    console.log(response);
+    setData(response);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const calculateAttendancePercentage = (present, absent) => {
+    const total = present + absent;
+    return total > 0 ? ((present / total) * 100).toFixed(1) : 0;
+  };
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#333" />
+      </View>
+    );
+  }
+  return (
+    <ScrollView style={styles.container}>
+      <Text style={styles.header}>Attendance Overview</Text>
+      {data.attendanceOverviewDtoList.map((course, index) => (
+        <TouchableOpacity
+          key={index}
+          style={styles.courseCard}
+          onPress={() => {
+            router.push("(tabs)/attendance/Details");
+          }}
+        >
+          <Text style={styles.courseName}>{course.courseName}</Text>
+          <Text style={styles.batchName}>{course.batchName}</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{course.presentCount}</Text>
+              <Text style={styles.statLabel}>Present</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{course.absentCount}</Text>
+              <Text style={styles.statLabel}>Absent</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {calculateAttendancePercentage(
+                  course.presentCount,
+                  course.absentCount
+                )}
+                %
+              </Text>
+              <Text style={styles.statLabel}>Attendance</Text>
+            </View>
+          </View>
+          <Text style={styles.dateRange}>
+            {new Date(course.startDate).toLocaleDateString()} -{" "}
+            {new Date(course.endDate).toLocaleDateString()}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f8f8",
+    padding: 16,
+  },
+  header: {
+    fontSize: 26,
+    fontWeight: "bold",
+    marginBottom: 20,
+    color: "#333",
+  },
+  courseCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  courseName: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 4,
+    color: "#333",
+  },
+  batchName: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 12,
+  },
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  statItem: {
+    alignItems: "center",
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  statLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 2,
+  },
+  dateRange: {
+    fontSize: 14,
+    color: "#999",
+  },
+});
+
+export default AttendanceScreen;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/attendance/Details.js
+================================================================================
+import React, { useMemo } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  Dimensions,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+
+const height = Dimensions.get("window").height;
+
+const Details = () => {
+  const courseData = {
+    courseDto: {
+      courseId: 2,
+      code: "001",
+      name: "Azure Development",
+      description: "Azure Description",
+      hours: 45,
+      credits: 3,
+      comments: "No Comments",
+      isActive: true,
+      isActiveId: 7,
+      branchId: 10,
+      createdOn: "2023-12-17T21:00:27.673",
+      modifiedOn: "2024-04-17T15:16:25.467",
+      createdBy: 1,
+      modifiedBy: 1,
+      isSelected: false,
+      courseDisplayName: "001-Azure Development",
+    },
+    attendanceOverviewDtoList: [],
+    attendanceDetailsDtoList: [
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-03-06T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-28T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-06T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-03-05T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: false,
+        attendanceDate: "2024-02-29T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-12T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-08T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-26T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-07T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-14T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: false,
+        attendanceDate: "2024-03-07T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-13T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-27T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-21T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-05T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-01T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-03-04T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-19T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-20T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: true,
+        attendanceDate: "2024-02-15T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+      {
+        studentId: 1,
+        courseId: 2,
+        batchId: 1,
+        facultyId: 1,
+        isPresent: false,
+        attendanceDate: "2024-02-22T00:00:00",
+        facultyCode: "F240201",
+        facultyFirstName: "Chunilal",
+        facultyLastName: "Malhotra",
+        attendancePercentage: null,
+      },
+    ],
+    paymentDto: {
+      paymentId: 0,
+      studentId: 0,
+      receiptNo: null,
+      actualAmt: 0,
+      discountPercent: 0,
+      finalAmt: 0,
+      createdBy: 0,
+      createdOn: "0001-01-01T00:00:00",
+      modifiedBy: null,
+      modifiedOn: null,
+      paymentLogDtoList: [],
+      studentRegistrationDto: {
+        studentId: 0,
+        titleId: 0,
+        lastName: null,
+        firstName: null,
+        nickName: null,
+        maidenName: null,
+        addr1: null,
+        addr2: null,
+        districtId: 0,
+        stateId: 0,
+        zipcode: null,
+        mobileNo: null,
+        genderId: 0,
+        dateOfBirth: "0001-01-01T00:00:00",
+        dateOfBirthStr: "",
+        emailId: null,
+        fatherName: null,
+        fatherMobileNo: null,
+        fatherEmailId: null,
+        motherName: null,
+        motherMobileNo: null,
+        motherEmailId: null,
+        stuNum: null,
+        isActive: false,
+        comment: null,
+        registrationDate: "0001-01-01T00:00:00",
+        registrationDateStr: "",
+        photoId: "00000000-0000-0000-0000-000000000000",
+        createdOn: "0001-01-01T00:00:00",
+        modifiedOn: null,
+        isActiveId: 0,
+        admissionTo: 0,
+        courseDtoList: [],
+        studentFullName: "",
+        password: null,
+        branchId: 0,
+        studentCourseId: "00000000-0000-0000-0000-000000000000",
+        stateName: null,
+        districtName: null,
+      },
+    },
+    lectureContentDtoList: [],
+    assignmentDtoList: [],
+  };
+
+  const attendancePercentage = useMemo(() => {
+    const totalClasses = courseData.attendanceDetailsDtoList.length;
+    const presentClasses = courseData.attendanceDetailsDtoList.filter(
+      (a) => a.isPresent
+    ).length;
+    return totalClasses > 0
+      ? ((presentClasses / totalClasses) * 100).toFixed(1)
+      : 0;
+  }, [courseData.attendanceDetailsDtoList]);
+
+  const renderAttendanceItem = ({ item }) => (
+    <View style={styles.attendanceItem}>
+      <Text style={styles.attendanceDate}>
+        {new Date(item.attendanceDate).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })}
+      </Text>
+      <View
+        style={[
+          styles.attendanceStatus,
+          { backgroundColor: item.isPresent ? "#4CAF50" : "#F44336" },
+        ]}
+      >
+        <Text style={styles.attendanceStatusText}>
+          {item.isPresent ? "Present" : "Absent"}
+        </Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.courseName}>{courseData.courseDto.name}</Text>
+        <Text style={styles.courseCode}>{courseData.courseDto.code}</Text>
+      </View>
+
+      <View style={styles.infoContainer}>
+        <View style={styles.infoItem}>
+          <Ionicons name="time-outline" size={24} color="#4c669f" />
+          <Text style={styles.infoText}>
+            {courseData.courseDto.hours} hours
+          </Text>
+        </View>
+        <View style={styles.infoItem}>
+          <Ionicons name="star-outline" size={24} color="#4c669f" />
+          <Text style={styles.infoText}>
+            {courseData.courseDto.credits} credits
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.descriptionContainer}>
+        <Text style={styles.descriptionTitle}>Course Description</Text>
+        <Text style={styles.descriptionText}>
+          {courseData.courseDto.description}
+        </Text>
+      </View>
+
+      <View style={styles.attendanceOverview}>
+        <Text style={styles.attendanceOverviewLabel}>Overall Attendance</Text>
+        <View style={styles.attendancePercentageContainer}>
+          <Text style={styles.attendancePercentage}>
+            {attendancePercentage}%
+          </Text>
+          <View style={styles.attendanceBarBackground}>
+            <View
+              style={[
+                styles.attendanceBar,
+                { width: `${attendancePercentage}%` },
+              ]}
+            />
+          </View>
+        </View>
+      </View>
+
+      <Text style={styles.attendanceListHeader}>Attendance Details</Text>
+      <FlatList
+        data={courseData.attendanceDetailsDtoList}
+        renderItem={renderAttendanceItem}
+        keyExtractor={(item) => item.attendanceDate}
+        style={styles.attendanceList}
+        scrollEnabled={false}
+      />
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f8f8",
+    marginBottom: height < 700 ? 60 : 90,
+  },
+  header: {
+    padding: 20,
+  },
+  courseName: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 5,
+  },
+  courseCode: {
+    fontSize: 18,
+    color: "#000",
+  },
+  infoContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    padding: 20,
+    backgroundColor: "#fff",
+    marginTop: 20,
+    marginHorizontal: 20,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  infoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  infoText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: "#333",
+  },
+  descriptionContainer: {
+    backgroundColor: "#fff",
+    margin: 20,
+    padding: 20,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  descriptionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+  },
+  descriptionText: {
+    fontSize: 16,
+    color: "#666",
+    lineHeight: 24,
+  },
+  attendanceOverview: {
+    backgroundColor: "#fff",
+    margin: 20,
+    padding: 20,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  attendanceOverviewLabel: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+  },
+  attendancePercentageContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  attendancePercentage: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#4CAF50",
+    marginRight: 10,
+    width: 70,
+  },
+  attendanceBarBackground: {
+    flex: 1,
+    height: 10,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 5,
+  },
+  attendanceBar: {
+    height: 10,
+    backgroundColor: "#4CAF50",
+    borderRadius: 5,
+  },
+  attendanceListHeader: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 20,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  attendanceList: {
+    marginHorizontal: 20,
+    borderRadius: 15,
+  },
+  attendanceItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  attendanceDate: {
+    fontSize: 16,
+    color: "#333",
+  },
+  attendanceStatus: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+  },
+  attendanceStatusText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+});
+
+export default Details;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/attendance/_layout.js
+================================================================================
+import { Stack } from "expo-router";
+
+export default function AttendanceLayout() {
+  return (
+    <Stack>
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="Details"
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/lecture/index.js
+================================================================================
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { useEffect } from "react";
+import { ENDPOINTS, getConfig } from "../../../config";
+
+const LectureScreen = () => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    const token = await AsyncStorage.getItem("token");
+    const userId = await AsyncStorage.getItem("userId");
+    const headers = getConfig(token, userId).headers;
+
+    const response = await fetch(
+      `${ENDPOINTS.GET_ATTENDANCE}?` +
+        new URLSearchParams({
+          tabConstant: "Course Content",
+        }).toString(),
+      {
+        headers,
+      }
+    ).then((res) => res.json());
+
+    console.log(response);
+    setData(response);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+  const renderAttachmentItem = ({ item }) => (
+    <TouchableOpacity style={styles.attachmentItem}>
+      <Ionicons
+        name={
+          item.fileContentType.startsWith("image")
+            ? "image-outline"
+            : "document-outline"
+        }
+        size={24}
+        color="#4c669f"
+      />
+      <Text style={styles.attachmentName}>{item.originalFileName}</Text>
+    </TouchableOpacity>
+  );
+
+  const renderLectureItem = ({ item }) => (
+    <View style={styles.lectureCard}>
+      <View style={styles.lectureHeader}>
+        <Text style={styles.lectureTitle}>{item.lectureTitle}</Text>
+        <Text style={styles.lectureDate}>{item.lectureDateStr}</Text>
+      </View>
+      <View style={styles.attachmentsContainer}>
+        <Text style={styles.attachmentsLabel}>Attachments:</Text>
+        <FlatList
+          data={item.lectureContentUploadDtoList}
+          renderItem={renderAttachmentItem}
+          keyExtractor={(attachment) => attachment.lectureContentUploadId}
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+        />
+      </View>
+    </View>
+  );
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#333" />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={styles.container}>
+      <Text style={styles.header}>Lecture Content</Text>
+      <FlatList
+        data={data.lectureContentDtoList}
+        renderItem={renderLectureItem}
+        keyExtractor={(item) => item.lectureContentId}
+        scrollEnabled={false}
+      />
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f8f8",
+    padding: 16,
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 16,
+  },
+  lectureCard: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  lectureHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  lectureTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    flex: 1,
+  },
+  lectureDate: {
+    fontSize: 14,
+    color: "#666",
+  },
+  attachmentsContainer: {
+    marginTop: 8,
+  },
+  attachmentsLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+  },
+  attachmentItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    padding: 8,
+    marginRight: 8,
+  },
+  attachmentName: {
+    fontSize: 14,
+    color: "#333",
+    marginLeft: 8,
+  },
+});
+
+export default LectureScreen;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/lecture/_layout.js
+================================================================================
+import { Stack } from "expo-router";
+
+export default function AttendanceLayout() {
+  return (
+    <Stack>
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/home/Page.js
+================================================================================
+import React, { useEffect, useState } from "react";
+import { View, Text, ActivityIndicator } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { Feather } from "@expo/vector-icons";
+import * as Font from "expo-font";
+import Box from "../../../components/Box";
+import { styles } from ".";
+
+export default function Page() {
+  const [user, setUser] = useState(null);
+  const navigation = useNavigation();
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const user = "Avval Halani";
+      setUser(user);
+      console.log("user: ", user);
+    })();
+  }, []);
+
+  const _loadAssetsAsync = async () => {
+    await Font.loadAsync({
+      SansRegular: require("../../../assets/OpenSans-Regular.ttf"),
+      SansBold: require("../../../assets/OpenSans-Bold.ttf"),
+      SourceCodeProRegular: require("../../../assets/SourceCodePro-Regular.ttf"),
+      OxygenRegular: require("../../../assets/Oxygen-Regular.ttf"),
+      OxygenBold: require("../../../assets/Oxygen-Bold.ttf"),
+    });
+    setAssetsLoaded(true);
+  };
+
+  useEffect(() => {
+    _loadAssetsAsync();
+  }, []);
+
+  return !assetsLoaded ? (
+    <ActivityIndicator size="large" color="#0000ff" />
+  ) : (
+    <View style={styles.container}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          marginBottom: 20,
+        }}
+      >
+        {/* Make a small box gray background a simple student logo */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <View
+            style={{
+              backgroundColor: "#F4F5FA",
+              padding: 10,
+              borderRadius: 10,
+            }}
+          >
+            <Feather name="user" size={24} color="black" />
+          </View>
+          {/* Add User name here */}
+          <Text
+            style={{
+              fontFamily: "OxygenBold",
+              fontSize: 16,
+            }}
+          >
+            Hello, {}
+          </Text>
+          {/* Add profile button here with the initials of the user make it round */}
+        </View>
+        <View
+          style={{
+            backgroundColor: "#E1E2FF",
+            padding: 10,
+            borderRadius: 50,
+          }}
+        >
+          <Text
+            style={{
+              color: "#484A79",
+              fontFamily: "OxygenBold",
+            }}
+          >
+            {user?.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+      </View>
+      {/* <Text style={styles.header}> */}
+      {/* //     Hello, {user?.charAt(0).toUpperCase() + user?.slice(1)}
+          //   </Text>
+          //   <View
+          //     style={{
+          //       borderBottomColor: "#666",
+          //       borderBottomWidth: 1,
+          //       marginBottom: 20,
+          //     }}
+          //   /> */}
+
+      <View style={styles.boxContainer}>
+        <Box
+          icon="calendar"
+          title="Attendance"
+          subtitle="Manage your attendance"
+          color="#FFF4DE"
+        />
+        <Box
+          icon="book"
+          title="Courses"
+          subtitle="View your courses"
+          color="#E8F4FF"
+        />
+        <Box
+          icon="file-text"
+          title="Results"
+          subtitle="View your results"
+          color="#E4F1DE"
+        />
+        <Box
+          icon="message-square"
+          title="Feedback"
+          subtitle="View your feedback"
+          color="#EBE5FF"
+        />
+      </View>
+    </View>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/home/index.js
+================================================================================
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
+import { Feather, AntDesign } from "@expo/vector-icons";
+import * as Font from "expo-font";
+import Box from "../../../components/Box";
+
+export default function Page() {
+  const [user, setUser] = useState(null);
+  const navigation = useNavigation();
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const user = "Avval Halani";
+      setUser(user);
+      console.log("user: ", user);
+    })();
+  }, []);
+
+  const _loadAssetsAsync = async () => {
+    await Font.loadAsync({
+      SansRegular: require("../../../assets/OpenSans-Regular.ttf"),
+      SansBold: require("../../../assets/OpenSans-Bold.ttf"),
+      SourceCodeProRegular: require("../../../assets/SourceCodePro-Regular.ttf"),
+      OxygenRegular: require("../../../assets/Oxygen-Regular.ttf"),
+      OxygenBold: require("../../../assets/Oxygen-Bold.ttf"),
+    });
+    setAssetsLoaded(true);
+  };
+
+  useEffect(() => {
+    _loadAssetsAsync();
+  }, []);
+
+  return !assetsLoaded ? (
+    <ActivityIndicator size="large" color="#0000ff" />
+  ) : (
+    <View style={styles.container}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          marginBottom: 40,
+        }}
+      >
+        {/* Make a small box gray background a simple student logo */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View
+            style={{
+              backgroundColor: "#F4F5FA",
+              padding: 15,
+              borderRadius: 10,
+            }}
+          >
+            <Feather name="user" size={24} color="black" />
+          </View>
+          {/* Add User name here */}
+          <Text
+            style={{
+              fontFamily: "OxygenBold",
+              fontSize: 18,
+            }}
+          >
+            {user}
+          </Text>
+          {/* Add profile button here with the initials (First and Last) of the user make it round */}
+        </View>
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#E1E2FF",
+            padding: 15,
+            borderRadius: 100,
+          }}
+        >
+          <Text
+            style={{
+              color: "#484A79",
+              fontFamily: "OxygenBold",
+              fontSize: 16,
+            }}
+          >
+            {user?.charAt(0).toUpperCase() +
+              user?.charAt(user.indexOf(" ") + 1)}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      {/* <Text style={styles.header}> */}
+      {/* //     Hello, {user?.charAt(0).toUpperCase() + user?.slice(1)}
+    //   </Text>
+    //   <View
+    //     style={{
+    //       borderBottomColor: "#666",
+    //       borderBottomWidth: 1,
+    //       marginBottom: 20,
+    //     }}
+    //   /> */}
+
+      <View style={styles.boxContainer}>
+        <Box
+          icon="calendar"
+          title="Attendance"
+          subtitle="Manage your attendance"
+          color="#FFF4DE"
+        />
+        <Box
+          icon="book"
+          title="Courses"
+          subtitle="View your courses"
+          color="#E8F4FF"
+        />
+        <Box
+          icon="file-text"
+          title="Results"
+          subtitle="View your results"
+          color="#E4F1DE"
+        />
+        <Box
+          icon="message-square"
+          title="Feedback"
+          subtitle="View your feedbacks"
+          color="#EBE5FF"
+        />
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#fff",
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 20,
+    fontFamily: "HalveticaRegular",
+  },
+  boxContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+});
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/home/_layout.js
+================================================================================
+import { Stack } from "expo-router";
+
+export default function HomeLayout() {
+  return (
+    <Stack>
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/fees/index.js
+================================================================================
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  ActivityIndicator,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ENDPOINTS, getConfig } from "../../../config";
+import { useState } from "react";
+import { useEffect } from "react";
+
+const FeesScreen = () => {
+  const [paymentDto, setPaymentDto] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    const token = await AsyncStorage.getItem("token");
+    const userId = await AsyncStorage.getItem("userId");
+    const headers = getConfig(token, userId).headers;
+
+    const response = await fetch(
+      `${ENDPOINTS.GET_ATTENDANCE}?` +
+        new URLSearchParams({
+          tabConstant: "Fees",
+        }).toString(),
+      {
+        headers,
+      }
+    ).then((res) => res.json());
+
+    console.log(response);
+    setPaymentDto(response);
+    setIsLoading(false);
+    console.log("paymentDto", paymentDto);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const renderPaymentLogItem = ({ item }) => (
+    <View style={styles.paymentLogItem}>
+      <View style={styles.paymentLogLeft}>
+        <Text style={styles.paymentLogDate}>{item.paymentDateStr}</Text>
+        <Text style={styles.paymentLogMode}>{item.paymentModeDisplayName}</Text>
+      </View>
+      <View style={styles.paymentLogRight}>
+        <Text style={styles.paymentLogAmount}>₹{item.amtPaid.toFixed(2)}</Text>
+        <Text style={styles.paymentLogBalance}>
+          Balance: ₹{item.balanceAmt.toFixed(2)}
+        </Text>
+      </View>
+    </View>
+  );
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#333" />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Fees Overview</Text>
+        <Text style={styles.receiptNo}>{paymentDto.receiptNo}</Text>
+      </View>
+
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Total Fee</Text>
+          <Text style={styles.summaryValue}>
+            ₹{paymentDto.paymentDto.actualAmt.toFixed(2)}
+          </Text>
+        </View>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Discount</Text>
+          <Text style={styles.summaryValue}>
+            {paymentDto.paymentDto.discountPercent}%
+          </Text>
+        </View>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Final Amount</Text>
+          <Text style={styles.summaryValue}>
+            ₹{paymentDto.paymentDto.finalAmt.toFixed(2)}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.paymentLogsHeader}>
+        <Ionicons name="time-outline" size={24} color="#4c669f" />
+        <Text style={styles.paymentLogsTitle}>Payment History</Text>
+      </View>
+
+      <FlatList
+        data={paymentDto.paymentDto.paymentLogDtoList}
+        renderItem={renderPaymentLogItem}
+        keyExtractor={(item) => item.paymentLogId}
+        scrollEnabled={false}
+      />
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f8f8",
+  },
+  header: {
+    padding: 20,
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#000",
+  },
+  receiptNo: {
+    fontSize: 16,
+    color: "#e0e0e0",
+    marginTop: 5,
+  },
+  summaryCard: {
+    backgroundColor: "#fff",
+    margin: 16,
+    padding: 16,
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  summaryItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  summaryLabel: {
+    fontSize: 16,
+    color: "#666",
+  },
+  summaryValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  paymentLogsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 16,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  paymentLogsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 8,
+  },
+  paymentLogItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#fff",
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  paymentLogLeft: {
+    flex: 1,
+  },
+  paymentLogRight: {
+    alignItems: "flex-end",
+  },
+  paymentLogDate: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  paymentLogMode: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+  },
+  paymentLogAmount: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4CAF50",
+  },
+  paymentLogBalance: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+  },
+});
+
+export default FeesScreen;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/fees/_layout.js
+================================================================================
+import { Stack } from "expo-router";
+
+export default function FeesLayout() {
+  return (
+    <Stack>
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/assignment/index.js
+================================================================================
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  TouchableOpacity,
+  Dimensions,
+  ActivityIndicator,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ENDPOINTS, getConfig } from "../../../config";
+
+const height = Dimensions.get("window").height;
+
+const AssignmentScreen = () => {
+
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    const token = await AsyncStorage.getItem("token");
+    const userId = await AsyncStorage.getItem("userId");
+    const headers = getConfig(token, userId).headers;
+
+    const response = await fetch(
+      `${ENDPOINTS.GET_ATTENDANCE}?` +
+        new URLSearchParams({
+          tabConstant: "Submission",
+        }).toString(),
+      {
+        headers,
+      }
+    ).then((res) => res.json());
+
+    console.log(response);
+    setData(response);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const renderAssignmentItem = ({ item }) => (
+    <View style={styles.assignmentCard}>
+      <View style={styles.assignmentHeader}>
+        <Text style={styles.courseName}>{item.courseName}</Text>
+        <Text style={styles.batchName}>{item.batchName}</Text>
+      </View>
+      <Text style={styles.assignmentDetails}>{item.assignmentDetails}</Text>
+      <View style={styles.dateContainer}>
+        <Ionicons name="calendar-outline" size={16} color="#666" />
+        <Text style={styles.dateText}>
+          {item.fromDateStr} - {item.toDateStr}
+        </Text>
+      </View>
+      <View style={styles.infoRow}>
+        <Text style={styles.infoLabel}>Out of:</Text>
+        <Text style={styles.infoValue}>{item.outOff}</Text>
+      </View>
+      <View style={styles.infoRow}>
+        <Text style={styles.infoLabel}>Status:</Text>
+        <Text
+          style={[
+            styles.infoValue,
+            { color: item.isStudentAssignmetSubmitted ? "#4CAF50" : "#F44336" },
+          ]}
+        >
+          {item.isStudentAssignmetSubmitted ? "Submitted" : "Not Submitted"}
+        </Text>
+      </View>
+      {item.assignmentUploadDtoList.length > 0 && (
+        <View style={styles.attachmentsContainer}>
+          <Text style={styles.attachmentsLabel}>Attachments:</Text>
+          {item.assignmentUploadDtoList.map((attachment, index) => (
+            <TouchableOpacity
+              key={attachment.assignmentUploadId}
+              style={styles.attachmentItem}
+            >
+              <Ionicons name="document-outline" size={20} color="#4c669f" />
+              <Text style={styles.attachmentName}>
+                {attachment.originalFileName}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#333" />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={styles.container}>
+      <Text style={styles.header}>Assignments</Text>
+      <FlatList
+        data={data.assignmentDtoList}
+        renderItem={renderAssignmentItem}
+        keyExtractor={(item) => item.assignmentId.toString()}
+        scrollEnabled={false}
+      />
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f8f8",
+    padding: 16,
+    marginBottom: height > 700 ? 100 : 80,
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 16,
+  },
+  assignmentCard: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  assignmentHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  courseName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  batchName: {
+    fontSize: 14,
+    color: "#666",
+  },
+  assignmentDetails: {
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 8,
+  },
+  dateContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  dateText: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 4,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: "#666",
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  attachmentsContainer: {
+    marginTop: 8,
+  },
+  attachmentsLabel: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 4,
+  },
+  attachmentItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  attachmentName: {
+    fontSize: 14,
+    color: "#4c669f",
+    marginLeft: 4,
+  },
+});
+
+export default AssignmentScreen;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(tabs_faculty)/assignment/_layout.js
+================================================================================
+import { Stack } from "expo-router";
+
+export default function LectureLayout() {
+  return (
+    <Stack>
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(auth)/_layout.js
+================================================================================
+import { Stack } from "expo-router";
+
+export default function TabsLayout() {
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="login" />
+    </Stack>
+  );
+}
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(auth)/login/index.js
+================================================================================
+import React, { useState } from "react";
+import {
+  StyleSheet,
+  SafeAreaView,
+  View,
+  Image,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import { router } from "expo-router";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ENDPOINTS, getConfig } from "../../../config";
+import Icon from "react-native-vector-icons/Feather";
+
+export default function Example() {
+  const [form, setForm] = useState({
+    username: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+
+  // const login = async () => {
+  //   // dummy login redirect to student home
+
+  //   // router.replace("(tabs_student)/home");
+  // };
+
+  const login = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(ENDPOINTS.LOGIN_USER, {
+        ...getConfig(),
+        method: "POST",
+        body: JSON.stringify(form),
+      }).then((res) => res.json());
+
+      console.log(response);
+
+      if (response.wasSuccessful) {
+        await AsyncStorage.setItem(
+          "userId",
+          response.data.userDto.userId.toString()
+        );
+
+        const role = response.data.userDto.selectedRoleDto.roleName;
+
+        await AsyncStorage.setItem("userLogin", response.data.userDto.username);
+        await AsyncStorage.setItem("token", response.data.token);
+        console.log(response.data.token);
+        await AsyncStorage.setItem("role", role);
+        if (response.data.userDto.isActive) {
+          if (role === "Tutor") {
+            router.replace("(tabs_faculty)/home");
+          }
+          if (role === "Student") {
+            router.replace("(tabs_student)/home");
+          } else {
+            Alert.alert("Error", "Something went wrong");
+          }
+        } else {
+          Alert.alert("Error", "Your account is not active");
+        }
+      } else {
+        Alert.alert("Error", response.message);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <KeyboardAwareScrollView>
+          <View style={styles.header}>
+            <Image
+              alt="App Logo"
+              resizeMode="contain"
+              style={styles.headerImg}
+              source={require("../../../assets/tutor_logo.png")}
+            />
+
+            <Text style={styles.title1}>Synnexa Tutor</Text>
+            <Text style={styles.title}>Sign in</Text>
+
+            <Text style={styles.subtitle}>
+              Sign in to get access to your account
+            </Text>
+          </View>
+
+          <View style={styles.form}>
+            <View style={styles.input}>
+              <Text style={styles.inputLabel}>Username</Text>
+
+              <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                onChangeText={(username) => setForm({ ...form, username })}
+                placeholder="Username"
+                placeholderTextColor="#6b7280"
+                style={styles.inputControl}
+                value={form.username}
+              />
+            </View>
+
+            <View style={styles.input}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  autoCorrect={false}
+                  onChangeText={(password) => setForm({ ...form, password })}
+                  placeholder="********"
+                  placeholderTextColor="#6b7280"
+                  style={styles.passwordInput}
+                  secureTextEntry={!passwordVisible}
+                  value={form.password}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setPasswordVisible(!passwordVisible)}
+                >
+                  <Icon
+                    name={passwordVisible ? "eye-off" : "eye"}
+                    size={24}
+                    color="#6b7280"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.formAction}>
+              <TouchableOpacity onPress={login} disabled={loading}>
+                <View style={styles.btn}>
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.btnText}>Sign in</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {/* Forgot Password */}
+
+          <View style={styles.formAction}>
+            <TouchableOpacity>
+              <Text style={styles.formLink}>Forgot password?</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAwareScrollView>
+      </View>
+    </SafeAreaView>
+
+    // just simply redirect to student home
+
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    paddingVertical: 24,
+    paddingHorizontal: 0,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+  },
+  title: {
+    fontSize: 31,
+    fontWeight: "700",
+    color: "#1D2A32",
+    marginBottom: 6,
+  },
+  title1: {
+    fontSize: 31,
+    fontWeight: "700",
+    color: "#1B4A99",
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#929292",
+  },
+  /** Header */
+  header: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 36,
+  },
+  headerImg: {
+    width: 80,
+    height: 80,
+    alignSelf: "center",
+    marginBottom: 36,
+  },
+  /** Form */
+  form: {
+    marginBottom: 24,
+    paddingHorizontal: 24,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+  },
+  formAction: {
+    marginTop: 4,
+  },
+  formLink: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#075eec",
+    textAlign: "center",
+  },
+  formFooter: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#222",
+    textAlign: "center",
+    letterSpacing: 0.15,
+  },
+  /** Input */
+  input: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#222",
+    marginBottom: 8,
+  },
+  inputControl: {
+    height: 50,
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#222",
+    borderWidth: 1,
+    borderColor: "#C9D3DB",
+    borderStyle: "solid",
+  },
+  /** Button */
+  btn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 30,
+    height: 50,
+    borderWidth: 1,
+    backgroundColor: "#1B4A99",
+    borderColor: "#075eec",
+  },
+  btnText: {
+    fontSize: 18,
+    lineHeight: 26,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#C9D3DB",
+  },
+  passwordInput: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#222",
+  },
+  eyeIcon: {
+    padding: 10,
+  },
+});
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/app/(auth)/login/_layout.js
+================================================================================
+import { Stack } from "expo-router";
+
+export default function HomeLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="index" />
+    </Stack>
+  );
+}
+
+####################################################################################################
+EXPLORING DIRECTORY: /Users/avval/Desktop/SynnexaTutor copy 2/constants
+####################################################################################################
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/constants/index.js
+================================================================================
+import { COLORS } from "./theme";
+
+export { COLORS };
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/constants/theme.js
+================================================================================
+export const COLORS = {
+  primary: "#000",
+  secondary: "#444262",
+  tertiary: "#FF7754",
+
+  gray: "#83829A",
+  gray2: "#C1C0C8",
+
+  white: "white",
+  lightWhite: "#F7F7F7",
+};
+
+####################################################################################################
+EXPLORING DIRECTORY: /Users/avval/Desktop/SynnexaTutor copy 2/config
+####################################################################################################
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/config/.DS_Store
+================================================================================
+[Binary file - content not displayed]
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/config/index.js
+================================================================================
+// Synnexa Login:
+
+// admin admin
+// F240201 12345
+// S240201 Vikrant1234
+
+// Needed:
+
+// Uploading assignment API (Student) working but where is the file (ATTACHMENT API)
+// Download Via Browser? Base 64 string
+// Loading GIF: HTML and CSS 
+// Student Profile Details (Login is not enough): studentRegistrationDto is null (LOGIN API)
+// Notifications DONE
+
+import { useEffect } from "react";
+
+const LOCALHOST = "http://34.203.42.115/SYN_TUT_API/";
+const DOMAIN = "";
+
+export const BASE_URL = LOCALHOST;
+
+export const LOGIN_USER = `${BASE_URL}api/Authenticate/ValidateUserInformation`;
+export const GET_ATTENDANCE = `${BASE_URL}api/student/StudentDashboard/NavigateToTab`;
+
+export const getConfig = (authorizationToken, user) => {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  if (authorizationToken) {
+    headers.Authorization = "Bearer " + authorizationToken;
+  }
+
+  if (user) {
+    // convert to integer
+    headers.LOGGED_IN_USER = parseInt(user);
+  }
+  console.log("from config", headers);
+
+  return { headers };
+};
+
+export const ENDPOINTS = {
+  BASE_URL,
+  LOGIN_USER,
+  GET_ATTENDANCE,
+};
+
+####################################################################################################
+EXPLORING DIRECTORY: /Users/avval/Desktop/SynnexaTutor copy 2/components
+####################################################################################################
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/components/Box.js
+================================================================================
+import { View, Text, TouchableOpacity } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Feather, AntDesign } from "@expo/vector-icons";
+import * as Font from "expo-font";
+
+const Box = ({ icon, title, subtitle, color }) => {
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const _loadAssetsAsync = async () => {
+    await Font.loadAsync({
+      OxygenRegular: require("../assets/Oxygen-Regular.ttf"),
+      OxygenBold: require("../assets/Oxygen-Bold.ttf"),
+    });
+    setAssetsLoaded(true);
+  };
+
+  useEffect(() => {
+    _loadAssetsAsync();
+  }, []);
+
+  return assetsLoaded ? (
+    <TouchableOpacity style={[styles.box, { backgroundColor: color }]}>
+      <View style={{ marginLeft: 5 }}>
+        <Feather name={icon} size={24} color="black" />
+      </View>
+      <Text style={styles.boxTitle}>{title}</Text>
+      <Text style={styles.boxSubtitle}>{subtitle}</Text>
+    </TouchableOpacity>
+  ) : null;
+};
+
+const styles = {
+  box: {
+    width: "48%",
+    height: 165,
+    borderRadius: 30,
+    padding: 20,
+    marginBottom: 20,
+  },
+  boxTitle: {
+    fontSize: 18,
+    fontFamily: "SansBold",
+    marginTop: 15,
+    marginLeft: 5,
+  },
+  boxSubtitle: {
+    fontSize: 16,
+    color: "#666",
+    fontFamily: "OxygenRegular",
+    marginTop: 15,
+    marginLeft: 5,
+  },
+};
+
+export default Box;
+
+
+================================================================================
+FILE: /Users/avval/Desktop/SynnexaTutor copy 2/components/Container.js
+================================================================================
+import React from "react";
+import { View } from "react-native";
+import { SafeAreaInsetsContext } from "react-native-safe-area-context";
+
+const Container = ({ children, style, useSafeArea = true, ...props }) => {
+  return (
+    <SafeAreaInsetsContext.Consumer>
+      {(insets) => (
+        <View
+          {...props}
+          style={[
+            { flex: 1 },
+            useSafeArea && {
+              paddingTop: insets.top,
+              paddingBottom: insets.bottom,
+            },
+            style,
+          ]}
+        >
+          {children}
+        </View>
+      )}
+    </SafeAreaInsetsContext.Consumer>
+  );
+};
+
+export default Container;
+

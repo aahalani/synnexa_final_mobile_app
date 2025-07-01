@@ -18,6 +18,7 @@ const SplashScreen = () => {
         if (user) {
           navigation.replace("(tabs_student)");
         } else {
+          // navigation.replace("(auth)");
           navigation.replace("(auth)");
         }
       } catch (error) {

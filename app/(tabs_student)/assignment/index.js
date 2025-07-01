@@ -16,6 +16,8 @@ import { useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ENDPOINTS, getConfig } from "../../../config";
 import { useNavigation } from "@react-navigation/native";
+import { LogBox } from "react-native";
+LogBox.ignoreAllLogs();
 
 const height = Dimensions.get("window").height;
 
@@ -30,9 +32,12 @@ const AssignmentScreen = () => {
     fetchData().then(() => setRefreshing(false));
   }, []);
 
+  
+
   const fetchData = async () => {
-    const token = await AsyncStorage.getItem("token");
-    const userId = await AsyncStorage.getItem("userId");
+    const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzeW5uZXhhVHV0b3JXZWJBcGlTdWJqZWN0IiwianRpIjoiYmFkOTgwYmYtYzc2MS00YjBhLWFiNDctYjNlZGE5MTEwMDhiIiwiaWF0IjoiMjcvOC8yMDI0IDg6MzY6NTVwbSIsIklkIjoiNiIsIlVzZXJOYW1lIjoiUzI0MDIwMSIsImV4cCI6MjA0MDEzMTIxNSwiaXNzIjoic3lubmV4YVR1dG9yV2ViQXBpSXNzdWVyIiwiYXVkIjoic3lubmV4YVR1dG9yV2ViQXBpQXVkaWVuY2UifQ.YNFygDgQM-PzcN-gA_GjJO-_-2GGdEFBhH3QthAuw-c";
+      const userId = 6;
     const headers = getConfig(token, userId).headers;
 
     const response = await fetch(
@@ -53,55 +58,89 @@ const AssignmentScreen = () => {
     fetchData();
   }, []);
 
-  const renderAssignmentItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.assignmentCard}
-      onPress={() => navigation.navigate("AssignmentDetails", { ...item })}
-    >
-      <View style={styles.assignmentHeader}>
-        <Text style={styles.courseName}>{item.courseName}</Text>
-        <Text style={styles.batchName}>{item.batchName}</Text>
-      </View>
-      <Text style={styles.assignmentDetails}>{item.assignmentDetails}</Text>
-      <View style={styles.dateContainer}>
-        <Ionicons name="calendar-outline" size={16} color="#666" />
-        <Text style={styles.dateText}>
-          {item.fromDateStr} - {item.toDateStr}
-        </Text>
-      </View>
-      <View style={styles.infoRow}>
-        <Text style={styles.infoLabel}>Out of:</Text>
-        <Text style={styles.infoValue}>{item.outOff}</Text>
-      </View>
-      <View style={styles.infoRow}>
-        <Text style={styles.infoLabel}>Status:</Text>
-        <Text
-          style={[
-            styles.infoValue,
-            { color: item.isStudentAssignmetSubmitted ? "#4CAF50" : "#F44336" },
-          ]}
-        >
-          {item.isStudentAssignmetSubmitted ? "Submitted" : "Not Submitted"}
-        </Text>
-      </View>
-      {item.assignmentUploadDtoList.length > 0 && (
-        <View style={styles.attachmentsContainer}>
-          <Text style={styles.attachmentsLabel}>Attachments:</Text>
-          {item.assignmentUploadDtoList.map((attachment, index) => (
-            <TouchableOpacity
-              key={attachment.assignmentUploadId}
-              style={styles.attachmentItem}
-            >
-              <Ionicons name="document-outline" size={20} color="#4c669f" />
-              <Text style={styles.attachmentName}>
-                {attachment.originalFileName}
-              </Text>
-            </TouchableOpacity>
-          ))}
+  const renderAssignmentItem = ({ item }) => {
+    // Parse assignmentUploadDtoList if it's a string
+    let parsedAssignmentUploadDtoList = item.assignmentUploadDtoList;
+
+    try {
+      if (
+        typeof item.assignmentUploadDtoList === "string" &&
+        item.assignmentUploadDtoList
+      ) {
+        parsedAssignmentUploadDtoList = JSON.parse(
+          item.assignmentUploadDtoList
+        );
+      }
+    } catch (error) {
+      console.warn("Error parsing assignmentUploadDtoList:", error);
+      parsedAssignmentUploadDtoList = [];
+    }
+
+    // Create a new object with the parsed data
+    const assignmentData = {
+      ...item,
+      assignmentUploadDtoList: parsedAssignmentUploadDtoList,
+    };
+    console.log("DAT", assignmentData);
+
+    return (
+      <TouchableOpacity
+        style={styles.assignmentCard}
+        onPress={() => {
+          // Pass the raw item directly
+          navigation.navigate("AssignmentDetails", {
+            assignmentData: JSON.stringify(item),
+          });
+        }}
+      >
+        <View style={styles.assignmentHeader}>
+          <Text style={styles.courseName}>{item.courseName}</Text>
+          <Text style={styles.batchName}>{item.batchName}</Text>
         </View>
-      )}
-    </TouchableOpacity>
-  );
+        <Text style={styles.assignmentDetails}>{item.assignmentDetails}</Text>
+        <View style={styles.dateContainer}>
+          <Ionicons name="calendar-outline" size={16} color="#666" />
+          <Text style={styles.dateText}>
+            {item.fromDateStr} - {item.toDateStr}
+          </Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Out of:</Text>
+          <Text style={styles.infoValue}>{item.outOff}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Status:</Text>
+          <Text
+            style={[
+              styles.infoValue,
+              {
+                color: item.isStudentAssignmetSubmitted ? "#4CAF50" : "#F44336",
+              },
+            ]}
+          >
+            {item.isStudentAssignmetSubmitted ? "Submitted" : "Not Submitted"}
+          </Text>
+        </View>
+        {parsedAssignmentUploadDtoList &&
+          parsedAssignmentUploadDtoList.length > 0 && (
+            <View style={styles.attachmentsContainer}>
+              <Text style={styles.attachmentsLabel}>Attachments:</Text>
+              {parsedAssignmentUploadDtoList.map((attachment) => (
+                <TouchableOpacity
+                  key={attachment.assignmentUploadId}
+                  style={styles.attachmentItem}
+                >
+                  <Ionicons name="document-outline" size={20} color="#4c669f" />
+                  <Text style={styles.attachmentName}>
+                    {attachment.originalFileName}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+      </TouchableOpacity>
+    );
+  };
 
   if (isLoading) {
     return (

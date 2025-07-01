@@ -1,14 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
-  Button,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Image,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
@@ -19,15 +18,28 @@ import * as FileSystem from "expo-file-system";
 const height = Dimensions.get("window").height;
 
 const AssignmentDetails = () => {
-  const assignment = useLocalSearchParams();
-  const [submission, setSubmission] = useState("");
+  const params = useLocalSearchParams();
+  const [assignment, setAssignment] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
-  console.log(assignment.isStudentAssignmetSubmitted);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleSubmit = () => {
-    console.log("Submitting assignment:", submission);
-    console.log("Uploading files:", selectedFiles);
-  };
+  useEffect(() => {
+    try {
+      if (params.assignmentData) {
+        const parsedData = JSON.parse(params.assignmentData);
+        if (typeof parsedData.assignmentUploadDtoList === "string") {
+          parsedData.assignmentUploadDtoList = JSON.parse(
+            parsedData.assignmentUploadDtoList
+          );
+        }
+        setAssignment(parsedData);
+      }
+    } catch (error) {
+      console.error("Error parsing assignment data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [params.assignmentData]);
 
   const pickDocument = async () => {
     try {
@@ -36,8 +48,30 @@ const AssignmentDetails = () => {
         multiple: true,
       });
 
-      if (result.type === "success") {
-        setSelectedFiles([...selectedFiles, result]);
+      console.log("DocumentPicker result:", result);
+
+      if (!result.canceled) {
+        if (result.assets && result.assets.length > 0) {
+          // Multiple files selected
+          const files = result.assets.map((asset) => ({
+            name: asset.name,
+            uri: asset.uri,
+            type: asset.mimeType,
+            size: asset.size,
+          }));
+          setSelectedFiles((prevFiles) => [...prevFiles, ...files]);
+        } else {
+          // Single file selected
+          const fileInfo = {
+            name: result.name,
+            uri: result.uri,
+            type: result.mimeType,
+            size: result.size,
+          };
+          setSelectedFiles((prevFiles) => [...prevFiles, fileInfo]);
+        }
+      } else {
+        console.log("Document picking canceled or dismissed");
       }
     } catch (err) {
       console.error("Error picking document:", err);
@@ -52,33 +86,64 @@ const AssignmentDetails = () => {
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      quality: 1,
-    });
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 1,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      });
 
-    if (!result.canceled) {
-      const asset = result.assets[0];
-      const fileName = `photo_${Date.now()}.jpg`;
-      const newPath = FileSystem.documentDirectory + fileName;
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const fileName = `photo_${Date.now()}.jpg`;
+        const newPath = FileSystem.documentDirectory + fileName;
 
-      try {
         await FileSystem.moveAsync({
           from: asset.uri,
           to: newPath,
         });
 
-        setSelectedFiles([...selectedFiles, { name: fileName, uri: newPath }]);
-      } catch (error) {
-        console.error("Error saving file:", error);
+        const fileInfo = {
+          name: fileName,
+          uri: newPath,
+          type: "image/jpeg",
+          size: asset.fileSize || 0,
+        };
+        setSelectedFiles((prevFiles) => [...prevFiles, fileInfo]);
       }
+    } catch (error) {
+      console.error("Error taking photo:", error);
+      alert("Failed to capture photo. Please try again.");
     }
   };
 
   const removeFile = (index) => {
-    const updatedFiles = selectedFiles.filter((_, i) => i !== index);
-    setSelectedFiles(updatedFiles);
+    setSelectedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
+
+  const handleSubmit = async () => {
+    if (selectedFiles.length === 0) {
+      alert("Please select at least one file to submit");
+      return;
+    }
+    console.log("Files to upload:", selectedFiles);
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#4c669f" />
+      </View>
+    );
+  }
+
+  if (!assignment) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text>No assignment data available</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -107,28 +172,24 @@ const AssignmentDetails = () => {
             style={[
               styles.infoValue,
               {
-                color:
-                  assignment.isStudentAssignmetSubmitted === false
-                    ? "#F44336"
-                    : "#4CAF50",
+                color: assignment.isStudentAssignmetSubmitted
+                  ? "#4CAF50"
+                  : "#F44336",
               },
             ]}
           >
-            {assignment.isStudentAssignmetSubmitted === false
-              ? "Not Submitted"
-              : "Submitted"}
+            {assignment.isStudentAssignmetSubmitted
+              ? "Submitted"
+              : "Not Submitted"}
           </Text>
         </View>
       </View>
 
-      {assignment.assignmentUploadDtoList.length > 0 && (
+      {assignment.assignmentUploadDtoList?.length > 0 && (
         <View style={styles.attachmentsContainer}>
           <Text style={styles.attachmentsLabel}>Attachments:</Text>
           {assignment.assignmentUploadDtoList.map((attachment, index) => (
-            <View
-              key={attachment.assignmentUploadId}
-              style={styles.attachmentItem}
-            >
+            <View key={index} style={styles.attachmentItem}>
               <Ionicons name="document-outline" size={24} color="#4c669f" />
               <Text style={styles.attachmentName}>
                 {attachment.originalFileName}
@@ -158,36 +219,33 @@ const AssignmentDetails = () => {
 
         {selectedFiles.map((file, index) => (
           <View key={index} style={styles.fileItem}>
-            {file.uri && (
+            {file.type?.startsWith("image/") ? (
               <Image source={{ uri: file.uri }} style={styles.thumbnail} />
+            ) : (
+              <Ionicons name="document-outline" size={24} color="#4c669f" />
             )}
-            <Text style={styles.fileName}>{file.name}</Text>
-            <TouchableOpacity onPress={() => removeFile(index)}>
+            <View style={styles.fileInfo}>
+              <Text style={styles.fileName} numberOfLines={1}>
+                {file.name}
+              </Text>
+              <Text style={styles.fileSize}>
+                {(file.size / 1024).toFixed(2)} KB
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => removeFile(index)}
+              style={styles.removeButton}
+            >
               <Ionicons name="close-circle-outline" size={24} color="#F44336" />
             </TouchableOpacity>
           </View>
         ))}
 
-        <TouchableOpacity
-          onPress={handleSubmit}
-          style={{
-            padding: 12,
-            borderRadius: 8,
-            flex: 1,
-            marginRight: 8,
-            borderWidth: 1,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 16,
-              textAlign: "center",
-              fontWeight: "bold",
-            }}
-          >
-            Submit
-          </Text>
-        </TouchableOpacity>
+        {selectedFiles.length > 0 && (
+          <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
+            <Text style={styles.submitButtonText}>Submit Files</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );
@@ -198,6 +256,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: "#fff",
+  },
+  centerContent: {
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1,
   },
   header: {
     flexDirection: "row",
@@ -264,7 +327,7 @@ const styles = StyleSheet.create({
   },
   attachmentName: {
     fontSize: 16,
-    color: "#4c669f",
+    color: "#000",
     marginLeft: 8,
   },
   submissionContainer: {
@@ -275,15 +338,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     marginBottom: 8,
-  },
-  submissionInput: {
-    height: 120,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 16,
-    textAlignVertical: "top",
   },
   buttonContainer: {
     flexDirection: "row",
@@ -316,23 +370,43 @@ const styles = StyleSheet.create({
   fileItem: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     backgroundColor: "#f0f0f0",
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
   },
+  fileInfo: {
+    flex: 1,
+    marginLeft: 8,
+  },
   fileName: {
     fontSize: 14,
     color: "#333",
-    flex: 1,
-    marginRight: 8,
+    marginBottom: 2,
+  },
+  fileSize: {
+    fontSize: 12,
+    color: "#666",
   },
   thumbnail: {
     width: 40,
     height: 40,
     borderRadius: 4,
-    marginRight: 8,
+  },
+  removeButton: {
+    padding: 4,
+  },
+  submitButton: {
+    backgroundColor: "#4c669f",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });
 

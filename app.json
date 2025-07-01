@@ -8,6 +8,17 @@
       "expo-router"
     ],
     "name": "SynnexaTutor",
-    "slug": "SynnexaTutor"
+    "slug": "SynnexaTutor",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "b872300e-9cdc-44cd-827f-84ab2664164d"
+      }
+    },
+    "android": {
+      "package": "com.aahalani.SynnexaTutor"
+    }
   }
 }

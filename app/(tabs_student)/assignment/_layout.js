@@ -18,7 +18,7 @@ export default function LectureLayout() {
       <Stack.Screen
         name="AssignmentDetails"
         options={{
-          headerTitle: "Lecture Details",
+          headerTitle: "Assignment Details",
           headerTitleStyle: {
             fontSize: 18,
             fontWeight: "bold",

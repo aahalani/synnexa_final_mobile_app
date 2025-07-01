@@ -1,3 +1,17 @@
+// Synnexa Login:
+
+// admin admin
+// F240201 12345
+// S240201 Vikrant1234
+
+// Needed:
+
+// Uploading assignment API (Student) working but where is the file (ATTACHMENT API)
+// Download Via Browser? Base 64 string
+// Loading GIF: HTML and CSS 
+// Student Profile Details (Login is not enough): studentRegistrationDto is null (LOGIN API)
+// Notifications DONE
+
 import { useEffect } from "react";
 
 const LOCALHOST = "http://34.203.42.115/SYN_TUT_API/";

@@ -24,6 +24,12 @@ export default function Example() {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
+  // const login = async () => {
+  //   // dummy login redirect to student home
+
+  //   // router.replace("(tabs_student)/home");
+  // };
+
   const login = async () => {
     setLoading(true);
     try {
@@ -45,6 +51,7 @@ export default function Example() {
 
         await AsyncStorage.setItem("userLogin", response.data.userDto.username);
         await AsyncStorage.setItem("token", response.data.token);
+        console.log(response.data.token);
         await AsyncStorage.setItem("role", role);
         if (response.data.userDto.isActive) {
           if (role === "Tutor") {
@@ -150,6 +157,9 @@ export default function Example() {
         </KeyboardAwareScrollView>
       </View>
     </SafeAreaView>
+
+    // just simply redirect to student home
+
   );
 }
 

@@ -20,8 +20,9 @@ const LectureScreen = () => {
 
   const fetchData = async () => {
     try {
-      const token = await AsyncStorage.getItem("token");
-      const userId = await AsyncStorage.getItem("userId");
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzeW5uZXhhVHV0b3JXZWJBcGlTdWJqZWN0IiwianRpIjoiYTQyMzNlNTYtY2RlZS00NDk3LTlkOGEtNjU2YTc3ODhhMjE5IiwiaWF0IjoiMTEvMTgvMjAyNCAzOjI1OjQyIFBNIiwiSWQiOiI2IiwiVXNlck5hbWUiOiJTMjQwMjAxIiwiZXhwIjoxNzMxOTQ0NzQyLCJpc3MiOiJzeW5uZXhhVHV0b3JXZWJBcGlJc3N1ZXIiLCJhdWQiOiJzeW5uZXhhVHV0b3JXZWJBcGlBdWRpZW5jZSJ9.96m2XUihErp-qz-IpOtg2enSQB58bSoRw-0zR84DIh0";
+      const userId = 6;
       const headers = getConfig(token, userId).headers;
 
       const response = await fetch(
