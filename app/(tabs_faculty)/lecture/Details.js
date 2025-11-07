@@ -10,22 +10,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '../../../constants';
 import { AntDesign } from '@expo/vector-icons';
 
-const BatchDetailsScreen = () => {
+const LectureDetailsScreen = () => {
   const params = useLocalSearchParams();
-  let batch = null;
-  try {
-    batch = params.batch ? JSON.parse(params.batch) : null;
-  } catch (error) {
-    console.error('Error parsing batch param:', error);
-    batch = null;
-  }
-  let allCourses = [];
-  try {
-    allCourses = params.courses ? JSON.parse(params.courses) : [];
-  } catch (error) {
-    console.error('Error parsing courses param:', error);
-    allCourses = [];
-  }
+  const batch = params.batch ? JSON.parse(params.batch) : null;
+  const allCourses = params.courses ? JSON.parse(params.courses) : [];
   
   // Filter courses for this batch (if needed) or use all courses
   // Since the API returns all courses, we'll use them all
@@ -113,7 +101,7 @@ const BatchDetailsScreen = () => {
               activeOpacity={0.7}
               onPress={() => {
                 router.push({
-                  pathname: '/(tabs_faculty)/attendance/MarkAttendance',
+                  pathname: '/(tabs_faculty)/lecture/SearchLectureContent',
                   params: {
                     batch: JSON.stringify(batch),
                     course: JSON.stringify(course),
@@ -169,27 +157,27 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
-    backgroundColor: '#fff',
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
+    backgroundColor: '#fff',
   },
   backButton: {
     padding: 8,
-    marginRight: 8,
   },
   headerContent: {
     flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: COLORS.primary,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: COLORS.gray,
     marginTop: 2,
   },
@@ -201,20 +189,28 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 100, // Extra padding to ensure content is visible above tab bar
   },
   batchInfoCard: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 24,
     borderWidth: 1,
     borderColor: '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   batchInfoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   batchInfoTitle: {
     fontSize: 18,
@@ -225,7 +221,9 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
   },
   infoLabel: {
     fontSize: 14,
@@ -234,29 +232,26 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 14,
-    color: '#1A1A1A',
+    color: '#333',
     fontWeight: '600',
   },
   activeBadgeContainer: {
-    marginTop: 8,
+    marginTop: 12,
+    alignItems: 'flex-end',
   },
   activeBadge: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 8,
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
-    alignSelf: 'flex-start',
   },
   activeBadgeText: {
-    color: '#fff',
-    fontSize: 10,
+    fontSize: 12,
+    color: '#4CAF50',
     fontWeight: '600',
   },
   sectionHeader: {
     marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
   },
   sectionTitle: {
     fontSize: 20,
@@ -278,11 +273,11 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 2,
+    elevation: 2,
   },
   courseCardHeader: {
     flexDirection: 'row',
@@ -296,22 +291,23 @@ const styles = StyleSheet.create({
   },
   courseCode: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: COLORS.primary,
   },
   courseName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: '#333',
     marginBottom: 4,
   },
   courseDisplayName: {
-    fontSize: 14,
+    fontSize: 12,
     color: COLORS.gray,
     marginBottom: 8,
   },
   courseDetails: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
   courseDetailItem: {
@@ -326,8 +322,7 @@ const styles = StyleSheet.create({
   courseDescription: {
     fontSize: 12,
     color: COLORS.gray,
-    fontStyle: 'italic',
-    marginTop: 4,
+    lineHeight: 18,
   },
   emptyContainer: {
     flex: 1,
@@ -336,10 +331,10 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.primary,
-    marginTop: 20,
+    marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
@@ -349,5 +344,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BatchDetailsScreen;
+export default LectureDetailsScreen;
 

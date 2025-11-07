@@ -32,29 +32,90 @@ export default function LoginScreen() {
         body: JSON.stringify(form),
       });
 
-      if (response.wasSuccessful && response.data) {
-        const { userDto, token } = response.data;
-        const role = userDto.selectedRoleDto.roleName;
+      console.log('[Login Response]', JSON.stringify(response, null, 2));
 
-        // Store token and user data
-        await storeAuthData(token, userDto);
+      // apiService unwraps one level: if API returns { wasSuccessful: true, data: {...} }
+      // it returns the data part. But API may have nested structure: { wasSuccessful: true, data: { data: {...} } }
+      // After apiService unwrapping, we get: { data: {...}, wasSuccessful: true }
+      // So we need to check for response.data.data or response.data
+      let responseData = response;
+      
+      // Handle nested structure: response.data.data (double nested)
+      if (response.data && response.data.data && response.data.data.token) {
+        responseData = response.data.data;
+      }
+      // Handle single nested: response.data (after apiService unwrapping)
+      else if (response.data && response.data.token) {
+        responseData = response.data;
+      }
+      // Handle direct structure (already unwrapped)
+      else if (response.token && response.userDto) {
+        responseData = response;
+      }
 
-        if (userDto.isActive) {
-          if (role === 'Tutor') {
-            router.replace('(tabs_faculty)/home');
-          } else if (role === 'Student') {
-            router.replace('(tabs_student)/home');
-          } else {
-            Alert.alert('Error', 'Invalid user role.');
-          }
+      const { userDto, token, studentRegistrationDto, facultyDto, communicationMainModel } = responseData;
+      
+      if (!userDto || !token) {
+        Alert.alert('Error', 'Invalid response from server. Missing user data or token.');
+        return;
+      }
+        
+      // Determine role - check selectedRoleDto first, then roleDtoList, then by DTO presence
+      let role = userDto.selectedRoleDto?.roleName;
+      
+      // If selectedRoleDto is null, check roleDtoList for Faculty or Student
+      if (!role && userDto.roleDtoList && userDto.roleDtoList.length > 0) {
+        const facultyRole = userDto.roleDtoList.find(r => r.roleName === 'Faculty' && r.isActive);
+        const studentRole = userDto.roleDtoList.find(r => r.roleName === 'Student' && r.isActive);
+        
+        if (facultyRole) {
+          role = 'Faculty';
+        } else if (studentRole) {
+          role = 'Student';
+        }
+      }
+      
+      // Fallback: determine role by DTO presence if still not found
+      if (!role) {
+        if (facultyDto) {
+          role = 'Faculty';
+        } else if (studentRegistrationDto) {
+          role = 'Student';
+        }
+      }
+
+      console.log('[Login Role]', role, { 
+        hasStudentDto: !!studentRegistrationDto, 
+        hasFacultyDto: !!facultyDto,
+        selectedRole: userDto.selectedRoleDto?.roleName,
+        roleList: userDto.roleDtoList?.map(r => r.roleName)
+      });
+
+      // Create complete user data object with all information
+      const completeUserData = {
+        ...userDto,
+        studentRegistrationDto,
+        facultyDto,
+        communicationMainModel
+      };
+
+      // Store token and complete user data
+      await storeAuthData(token, completeUserData);
+
+      if (userDto.isActive) {
+        if (role === 'Faculty' || role === 'Tutor') {
+          router.replace('(tabs_faculty)/home');
+        } else if (role === 'Student') {
+          router.replace('(tabs_student)/home');
         } else {
-          Alert.alert('Error', 'Your account is not active.');
+          Alert.alert('Error', `Invalid user role: ${role || 'Unknown'}. Please contact administrator.`);
         }
       } else {
-        Alert.alert('Error', response.message || 'Login failed.');
+        Alert.alert('Error', 'Your account is not active.');
       }
     } catch (error) {
-      Alert.alert('Error', error.message);
+      console.error('[Login Error]', error);
+      Alert.alert('Error', error.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -4,14 +4,13 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  FlatList,
   ActivityIndicator,
   RefreshControl,
   Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { apiFetch, ENDPOINTS } from '../../../services/apiService';
 import { COLORS } from '../../../constants';
+import { AntDesign } from '@expo/vector-icons';
 
 const FeesScreen = () => {
   const [paymentDto, setPaymentDto] = useState(null);
@@ -24,7 +23,7 @@ const FeesScreen = () => {
       const response = await apiFetch(endpoint);
       setPaymentDto(response);
     } catch (error) {
-      Alert.alert('Error', 'Failed to fetch fee data.');
+      Alert.alert('Error', error.message || 'Failed to fetch fee data.');
       console.error('Error fetching fee data:', error);
     } finally {
       setIsLoading(false);
@@ -41,177 +40,299 @@ const FeesScreen = () => {
     fetchData();
   };
 
-  const renderPaymentLogItem = ({ item }) => (
-    <View style={styles.paymentLogItem}>
-      <View style={styles.paymentLogLeft}>
-        <Text style={styles.paymentLogDate}>{item.paymentDateStr}</Text>
-        <Text style={styles.paymentLogMode}>{item.paymentModeDisplayName}</Text>
-      </View>
-      <View style={styles.paymentLogRight}>
-        <Text style={styles.paymentLogAmount}>₹{item.amtPaid.toFixed(2)}</Text>
-        <Text style={styles.paymentLogBalance}>Balance: ₹{item.balanceAmt.toFixed(2)}</Text>
-      </View>
-    </View>
-  );
+  const formatCurrency = (amount) => {
+    // Handle undefined, null, or empty string
+    if (amount === undefined || amount === null || amount === '') {
+      return `₹0.00`;
+    }
+    
+    // Coerce to number after trimming if it's a string
+    const trimmedAmount = typeof amount === 'string' ? amount.trim() : amount;
+    const parsed = Number(trimmedAmount);
+    
+    // Validate the parsed value
+    if (!Number.isFinite(parsed) || isNaN(parsed)) {
+      return `₹0.00`;
+    }
+    
+    return `₹${parsed.toFixed(2)}`;
+  };
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
-  if (!paymentDto || !paymentDto.paymentDto) {
-    return (
-      <ScrollView
-        contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        <Text style={styles.noDataMessage}>No fee data available.</Text>
-      </ScrollView>
-    );
-  }
+  const payment = paymentDto?.paymentDto;
+  const paymentLogs = payment?.paymentLogDtoList || [];
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 100 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Fees Overview</Text>
-        {paymentDto.receiptNo && <Text style={styles.receiptNo}>{paymentDto.receiptNo}</Text>}
-      </View>
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {!payment ? (
+          <View style={styles.emptyContainer}>
+            <AntDesign name="creditcard" size={64} color={COLORS.gray} />
+            <Text style={styles.emptyText}>No Fee Data</Text>
+            <Text style={styles.emptySubtext}>
+              Your fee information will appear here
+            </Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.headerSection}>
+              <Text style={styles.sectionTitle}>Fee Overview</Text>
+              {paymentDto.receiptNo && (
+                <Text style={styles.receiptNo}>Receipt: {paymentDto.receiptNo}</Text>
+              )}
+            </View>
 
-      <View style={styles.summaryCard}>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Total Fee</Text>
-          <Text style={styles.summaryValue}>₹{paymentDto.paymentDto.actualAmt.toFixed(2)}</Text>
-        </View>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Discount</Text>
-          <Text style={styles.summaryValue}>{paymentDto.paymentDto.discountPercent}%</Text>
-        </View>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Final Amount</Text>
-          <Text style={styles.summaryValue}>₹{paymentDto.paymentDto.finalAmt.toFixed(2)}</Text>
-        </View>
-      </View>
+            {/* Summary Card */}
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryHeader}>
+                <AntDesign name="wallet" size={24} color={COLORS.primary} />
+                <Text style={styles.summaryTitle}>Payment Summary</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Total Fee</Text>
+                  <Text style={styles.summaryValue}>{formatCurrency(payment.actualAmt)}</Text>
+                </View>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Discount</Text>
+                  <Text style={[styles.summaryValue, { color: '#4CAF50' }]}>
+                    {payment.discountPercent || 0}%
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.finalAmountContainer}>
+                <Text style={styles.finalAmountLabel}>Final Amount</Text>
+                <Text style={styles.finalAmountValue}>{formatCurrency(payment.finalAmt)}</Text>
+              </View>
+            </View>
 
-      <View style={styles.paymentLogsHeader}>
-        <Ionicons name="time-outline" size={24} color="#4c669f" />
-        <Text style={styles.paymentLogsTitle}>Payment History</Text>
-      </View>
-
-      <FlatList
-        data={paymentDto.paymentDto.paymentLogDtoList}
-        renderItem={renderPaymentLogItem}
-        keyExtractor={(item) => item.paymentLogId.toString()}
-        scrollEnabled={false}
-      />
-    </ScrollView>
+            {/* Payment History */}
+            {paymentLogs.length > 0 && (
+              <View style={styles.paymentHistorySection}>
+                <Text style={styles.sectionTitle}>Payment History</Text>
+                <Text style={styles.sectionSubtitle}>
+                  {paymentLogs.length} {paymentLogs.length === 1 ? 'payment' : 'payments'} recorded
+                </Text>
+                {paymentLogs.map((log, index) => (
+                  <View key={index} style={styles.paymentLogCard}>
+                    <View style={styles.paymentLogHeader}>
+                      <View style={styles.paymentLogLeft}>
+                        <View style={styles.paymentLogIconContainer}>
+                          <AntDesign name="checkcircle" size={20} color="#4CAF50" />
+                        </View>
+                        <View style={styles.paymentLogInfo}>
+                          <Text style={styles.paymentLogDate}>{log.paymentDateStr || 'N/A'}</Text>
+                          <Text style={styles.paymentLogMode}>{log.paymentModeDisplayName || 'N/A'}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.paymentLogRight}>
+                        <Text style={styles.paymentLogAmount}>{formatCurrency(log.amtPaid)}</Text>
+                        {log.balanceAmt !== undefined && (
+                          <Text style={styles.paymentLogBalance}>
+                            Balance: {formatCurrency(log.balanceAmt)}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#fff',
   },
-  header: {
-    padding: 20,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  headerSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginBottom: 4,
   },
   receiptNo: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 5,
+    fontSize: 12,
+    color: COLORS.gray,
+    marginTop: 4,
   },
   summaryCard: {
-    backgroundColor: '#fff',
-    margin: 16,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
     padding: 16,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
   },
-  summaryItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  summaryLabel: {
-    fontSize: 16,
-    color: '#666',
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  paymentLogsHeader: {
+  summaryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 16,
-    marginTop: 20,
-    marginBottom: 10,
+    marginBottom: 16,
   },
-  paymentLogsTitle: {
+  summaryTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginLeft: 8,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginLeft: 12,
   },
-  paymentLogItem: {
+  summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  summaryItem: {
+    flex: 1,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginBottom: 4,
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  finalAmountContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  finalAmountLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  finalAmountValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  paymentHistorySection: {
+    marginTop: 8,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginBottom: 16,
+  },
+  paymentLogCard: {
     backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
     elevation: 2,
   },
+  paymentLogHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   paymentLogLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
+  },
+  paymentLogIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  paymentLogInfo: {
+    flex: 1,
+  },
+  paymentLogDate: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  paymentLogMode: {
+    fontSize: 12,
+    color: COLORS.gray,
   },
   paymentLogRight: {
     alignItems: 'flex-end',
   },
-  paymentLogDate: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  paymentLogMode: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
   paymentLogAmount: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#4CAF50',
+    marginBottom: 4,
   },
   paymentLogBalance: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    fontSize: 12,
+    color: COLORS.gray,
   },
-  noDataMessage: {
-    textAlign: 'center',
-    color: '#666',
-    fontSize: 16,
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 100,
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.primary,
     marginTop: 20,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 

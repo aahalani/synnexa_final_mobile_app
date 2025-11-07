@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  FlatList,
-  TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { apiFetch, ENDPOINTS } from '../../../services/apiService';
 import { COLORS } from '../../../constants';
+import { AntDesign } from '@expo/vector-icons';
 
 const LectureScreen = () => {
   const [data, setData] = useState(null);
@@ -21,11 +21,13 @@ const LectureScreen = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const endpoint = `${ENDPOINTS.STUDENT_DASHBOARD}?${new URLSearchParams({ tabConstant: 'Course Content' })}`;
-      const response = await apiFetch(endpoint);
+      const response = await apiFetch(ENDPOINTS.FACULTY_LECTURE_CONTENT_UPLOAD, {
+        method: 'GET',
+      });
+      console.log('[Lecture Content API Response]', JSON.stringify(response, null, 2));
       setData(response);
     } catch (error) {
-      Alert.alert('Error', 'Failed to fetch lecture content.');
+      Alert.alert('Error', error.message || 'Failed to fetch lecture content data.');
       console.error('Error fetching lecture data:', error);
     } finally {
       setIsLoading(false);
@@ -42,38 +44,6 @@ const LectureScreen = () => {
     fetchData();
   };
 
-  const renderAttachmentItem = ({ item }) => (
-    <TouchableOpacity style={styles.attachmentItem}>
-      <Ionicons
-        name={item.fileContentType.startsWith('image') ? 'image-outline' : 'document-outline'}
-        size={24}
-        color={COLORS.primary}
-      />
-      <Text style={styles.attachmentName}>{item.originalFileName}</Text>
-    </TouchableOpacity>
-  );
-
-  const renderLectureItem = ({ item }) => (
-    <View style={styles.lectureCard}>
-      <View style={styles.lectureHeader}>
-        <Text style={styles.lectureTitle}>{item.lectureTitle}</Text>
-        <Text style={styles.lectureDate}>{item.lectureDateStr}</Text>
-      </View>
-      {item.lectureContentUploadDtoList && item.lectureContentUploadDtoList.length > 0 && (
-        <View style={styles.attachmentsContainer}>
-          <Text style={styles.attachmentsLabel}>Attachments:</Text>
-          <FlatList
-            data={item.lectureContentUploadDtoList}
-            renderItem={renderAttachmentItem}
-            keyExtractor={(attachment) => attachment.lectureContentUploadId.toString()}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-          />
-        </View>
-      )}
-    </View>
-  );
-
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -82,93 +52,151 @@ const LectureScreen = () => {
     );
   }
 
+  const batchList = data?.batchDtoList || [];
+
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <Text style={styles.header}>Lecture Content</Text>
-      {data && data.lectureContentDtoList && data.lectureContentDtoList.length > 0 ? (
-        <FlatList
-          data={data.lectureContentDtoList}
-          renderItem={renderLectureItem}
-          keyExtractor={(item) => item.lectureContentId.toString()}
-          scrollEnabled={false}
-        />
-      ) : (
-        <Text style={styles.noDataMessage}>No lecture content available.</Text>
-      )}
-    </ScrollView>
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {batchList.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <AntDesign name="filetext1" size={64} color={COLORS.gray} />
+            <Text style={styles.emptyText}>No Batches Available</Text>
+            <Text style={styles.emptySubtext}>
+              There are no batches available for lecture content management
+            </Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.headerSection}>
+              <Text style={styles.sectionTitle}>Select Batch</Text>
+              <Text style={styles.sectionSubtitle}>
+                {batchList.length} {batchList.length === 1 ? 'batch' : 'batches'} available
+              </Text>
+            </View>
+            {batchList.map((batch, index) => (
+              <TouchableOpacity
+                key={batch.batchId || index}
+                style={styles.batchCard}
+                activeOpacity={0.7}
+                onPress={() => {
+                  router.push({
+                    pathname: '/(tabs_faculty)/lecture/Details',
+                    params: {
+                      batch: JSON.stringify(batch),
+                      courses: JSON.stringify(data?.courseDtoList || []),
+                    },
+                  });
+                }}
+              >
+                <View style={styles.batchCardHeader}>
+                  <View style={styles.batchCodeContainer}>
+                    <AntDesign name="appstore1" size={20} color={COLORS.primary} />
+                    <Text style={[styles.batchCode, { marginLeft: 8 }]}>{batch.batchCode}</Text>
+                  </View>
+                  <AntDesign name="right" size={18} color={COLORS.gray} />
+                </View>
+                <Text style={styles.batchName}>{batch.batchName}</Text>
+                {batch.batchDisplayName && (
+                  <Text style={styles.batchDisplayName}>{batch.batchDisplayName}</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f8f8f8',
-        padding: 16,
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100, // Extra padding to ensure content is visible above tab bar
+  },
+  headerSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: COLORS.gray,
+  },
+  batchCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
     },
-    header: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 16,
-    },
-    lectureCard: {
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        padding: 16,
-        marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    lectureHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    lectureTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        flex: 1,
-    },
-    lectureDate: {
-        fontSize: 14,
-        color: '#666',
-    },
-    attachmentsContainer: {
-        marginTop: 8,
-    },
-    attachmentsLabel: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 8,
-    },
-    attachmentItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#f0f0f0',
-        borderRadius: 8,
-        padding: 8,
-        marginRight: 8,
-    },
-    attachmentName: {
-        fontSize: 14,
-        color: '#333',
-        marginLeft: 8,
-    },
-    noDataMessage: {
-        textAlign: 'center',
-        color: '#666',
-        fontSize: 16,
-        marginTop: 20,
-    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  batchCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  batchCodeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  batchCode: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  batchName: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 4,
+  },
+  batchDisplayName: {
+    fontSize: 12,
+    color: COLORS.gray,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 100,
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginTop: 20,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginTop: 8,
+    textAlign: 'center',
+  },
 });
 
 export default LectureScreen;

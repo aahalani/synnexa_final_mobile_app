@@ -5,61 +5,45 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  ScrollView,
   Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Feather, AntDesign } from "@expo/vector-icons";
 import * as Font from "expo-font";
 import Container from "../../../components/Container";
+import { getUser } from "../../../services/authService";
+import { LinearGradient } from "expo-linear-gradient";
 
-const Card = ({ children, style }) => (
-  <View style={[styles.card, style]}>{children}</View>
-);
-
-const screenHeight = Dimensions.get("window").height;
+const { width } = Dimensions.get("window");
 
 export default function Page() {
   const [user, setUser] = useState(null);
   const navigation = useNavigation();
   const [assetsLoaded, setAssetsLoaded] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      text: "Your attendance for today is 100%.",
-      icon: "checkcircleo",
-      iconColor: "#4CAF50",
-      timestamp: "2 hours ago",
-    },
-    {
-      id: 2,
-      text: "Your fees for this month are due.",
-      icon: "exclamationcircleo",
-      iconColor: "#FF9800",
-      timestamp: "1 day ago",
-      urgent: true,
-    },
-    {
-      id: 3,
-      text: "New assignment posted for Math.",
-      icon: "book",
-      iconColor: "#2196F3",
-      timestamp: "3 days ago",
-    },
-    {
-      id: 4,
-      text: "Reminder: Submit your project by Friday.",
-      icon: "filetext1",
-      iconColor: "#9C27B0",
-      timestamp: "5 days ago",
-    },
-  ]);
 
   useEffect(() => {
     (async () => {
-      const user = "Avval Halani";
-      setUser(user);
-      console.log("user: ", user);
+      try {
+        const userData = await getUser();
+        
+        if (userData) {
+          let displayName = userData.username; // fallback
+          
+          // Check for student data first
+          if (userData.studentRegistrationDto && userData.studentRegistrationDto.studentFullName) {
+            displayName = userData.studentRegistrationDto.studentFullName;
+          } else if (userData.studentRegistrationDto && userData.studentRegistrationDto.firstName && userData.studentRegistrationDto.lastName) {
+            displayName = `${userData.studentRegistrationDto.firstName} ${userData.studentRegistrationDto.lastName}`;
+          }
+          
+          setUser(displayName);
+        }
+      } catch (error) {
+        if (__DEV__) {
+          console.error("Error fetching user data");
+        }
+        setUser("User");
+      }
     })();
   }, []);
 
@@ -75,200 +59,212 @@ export default function Page() {
     _loadAssetsAsync();
   }, []);
 
-  const renderNotification = (notification) => (
-    <Card
-      key={notification.id}
-      style={[
-        notification.urgent ? styles.urgentNotification : null,
-        {
-          marginHorizontal: 0,
-        },
-      ]}
-    >
-      <View style={styles.notificationItem}>
-        <AntDesign
-          name={notification.icon}
-          size={20}
-          color={notification.iconColor}
-          style={styles.notificationIcon}
-        />
-        <Text style={styles.notificationText}>{notification.text}</Text>
-      </View>
-      <Text style={styles.notificationTimestamp}>{notification.timestamp}</Text>
-    </Card>
-  );
+  const quickAccessItems = [
+    {
+      id: 1,
+      title: "Attendance",
+      icon: "checkcircle",
+      iconType: "AntDesign",
+      color: "#4A90E2",
+      gradient: ["#4A90E2", "#357ABD"],
+      onPress: () => navigation.navigate("attendance"),
+    },
+    {
+      id: 2,
+      title: "Fees",
+      icon: "creditcard",
+      iconType: "AntDesign",
+      color: "#50C878",
+      gradient: ["#50C878", "#3FA861"],
+      onPress: () => navigation.navigate("fees"),
+    },
+    {
+      id: 3,
+      title: "Assignment",
+      icon: "book",
+      iconType: "AntDesign",
+      color: "#FF6B6B",
+      gradient: ["#FF6B6B", "#E55555"],
+      onPress: () => navigation.navigate("assignment"),
+    },
+    {
+      id: 4,
+      title: "Lecture",
+      icon: "filetext1",
+      iconType: "AntDesign",
+      color: "#9B59B6",
+      gradient: ["#9B59B6", "#8E44AD"],
+      onPress: () => navigation.navigate("lecture"),
+    },
+  ];
+
+  const renderIcon = (item) => {
+    const IconComponent = item.iconType === "AntDesign" ? AntDesign : Feather;
+    return <IconComponent name={item.icon} size={32} color="#fff" />;
+  };
 
   return !assetsLoaded ? (
-    <ActivityIndicator size="large" color="#0000ff" />
+    <ActivityIndicator size="large" color="#4A90E2" />
   ) : (
     <Container style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <LinearGradient
+        colors={["#F8F9FA", "#FFFFFF"]}
+        style={styles.gradientBackground}
+      >
+        {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerText}>
-            <Text style={styles.welcomeText}>Welcome Back,</Text>
-            <Text style={styles.nameText}>Avval</Text>
+          <View style={styles.headerLeft}>
+            <View style={styles.greetingContainer}>
+              <Text style={styles.greetingText}>Hello,</Text>
+              <Text style={styles.nameText}>{user?.split(' ')[0] || 'User'} 👋</Text>
+            </View>
+            <Text style={styles.subGreetingText}>What would you like to do today?</Text>
           </View>
-          <Feather name="user" size={25} color="#333" />
-        </View>
-        <Text style={styles.sectionTitle}>Quick Access</Text>
-
-        <View style={styles.iconContainer}>
-          {/* Attendance */}
           <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => navigation.navigate("attendance")}
+            onPress={() => navigation.navigate('profile')}
+            style={styles.profileButton}
           >
-            <AntDesign name="checkcircleo" size={27} color="#333" />
-            <Text style={styles.iconText}>Attendance</Text>
-          </TouchableOpacity>
-
-          {/* Fees */}
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => navigation.navigate("fees")}
-          >
-            <AntDesign name="creditcard" size={27} color="#333" />
-            <Text style={styles.iconText}>Fees</Text>
-          </TouchableOpacity>
-
-          {/* Assignment */}
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => navigation.navigate("assignment")}
-          >
-            <AntDesign name="book" size={27} color="#333" />
-            <Text style={styles.iconText}>Assignment</Text>
-          </TouchableOpacity>
-
-          {/* Lecture */}
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => navigation.navigate("lecture")}
-          >
-            <AntDesign name="filetext1" size={27} color="#333" />
-            <Text style={styles.iconText}>Lecture</Text>
+            <View style={styles.profileIconContainer}>
+              <Feather name="user" size={20} color="#4A90E2" />
+            </View>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionTitle}>Latest Notifications</Text>
-        <View style={styles.notificationContainer}>
-          {notifications.slice(-3).map(renderNotification)}
-          <TouchableOpacity style={styles.viewMoreButton}>
-            <Text style={styles.viewMoreText}>View More</Text>
-          </TouchableOpacity>
+        {/* Quick Access Grid */}
+        <View style={styles.contentContainer}>
+          <View style={styles.gridContainer}>
+            {quickAccessItems.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.card}
+                onPress={item.onPress}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={item.gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.cardGradient}
+                >
+                  <View style={styles.iconContainer}>
+                    {renderIcon(item)}
+                  </View>
+                  <Text style={styles.cardTitle}>{item.title}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-      </ScrollView>
+      </LinearGradient>
     </Container>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
-    paddingBottom: screenHeight * 0.1,
-    // align all items in the center
-    justifyContent: "center",
+    flex: 1,
+  },
+  gradientBackground: {
+    flex: 1,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    alignItems: "flex-start",
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 30,
   },
-  headerText: {
+  headerLeft: {
+    flex: 1,
+  },
+  greetingContainer: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "baseline",
+    marginBottom: 6,
   },
-  welcomeText: {
+  greetingText: {
     fontFamily: "PlusJakartaSans",
-    fontSize: 18,
-    marginRight: 5,
-    color: "#333",
+    fontSize: 24,
+    color: "#666",
+    marginRight: 8,
   },
   nameText: {
     fontFamily: "PlusJakartaSans_Bold",
-    fontSize: 18,
-    color: "#333",
+    fontSize: 28,
+    color: "#1A1A1A",
   },
-  sectionTitle: {
-    fontFamily: "PlusJakartaSans_Bold",
-    fontSize: 20,
-    marginBottom: 10,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    color: "#333",
-  },
-  iconContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  iconButton: {
-    alignItems: "center",
-  },
-  iconText: {
+  subGreetingText: {
     fontFamily: "PlusJakartaSans",
     fontSize: 14,
-    marginTop: 5,
-    color: "#333",
+    color: "#999",
+    marginTop: 4,
   },
-  notificationContainer: {
-    paddingHorizontal: 15,
-    marginBottom: 20,
+  profileButton: {
+    marginTop: 4,
   },
-  card: {
+  profileIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 10,
-    marginHorizontal: 20,
+    justifyContent: "center",
+    alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  notificationItem: {
+  contentContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+  gridContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    paddingTop: 10,
+  },
+  card: {
+    width: (width - 60) / 2,
+    height: 160,
+    marginBottom: 20,
+    borderRadius: 20,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  cardGradient: {
+    flex: 1,
+    padding: 20,
+    justifyContent: "space-between",
+    borderRadius: 20,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    justifyContent: "center",
     alignItems: "center",
+    marginBottom: 12,
   },
-  notificationIcon: {
-    marginRight: 10,
-  },
-  notificationText: {
-    fontFamily: "PlusJakartaSans",
-    fontSize: 16,
-    color: "#333",
-  },
-  notificationTimestamp: {
-    fontFamily: "PlusJakartaSans",
-    fontSize: 12,
-    color: "#888",
-    marginTop: 5,
-  },
-  urgentNotification: {
-    borderLeftWidth: 4,
-    borderLeftColor: "#FF9800",
-  },
-  viewMoreButton: {
-    backgroundColor: "#2196F3",
-    borderRadius: 4,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    alignSelf: "center",
-    marginTop: 20,
-  },
-  viewMoreText: {
-    fontFamily: "PlusJakartaSans",
-    fontSize: 16,
+  cardTitle: {
+    fontFamily: "PlusJakartaSans_Bold",
+    fontSize: 18,
     color: "#fff",
+    marginTop: "auto",
   },
 });
+

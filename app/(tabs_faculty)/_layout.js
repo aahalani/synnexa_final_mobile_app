@@ -4,7 +4,7 @@ import { Feather, AntDesign } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import FlashMessage from "react-native-flash-message";
 import { COLORS } from "../../constants";
-import { Platform, View, Dimensions, Text } from "react-native"; // Import Text component
+import { Platform, View, Dimensions, Text } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const screenHeight = Dimensions.get("window").height;
@@ -31,7 +31,7 @@ const TabLabel = ({ focused, text }) => {
   return (
     <Text
       style={{
-        fontSize: 18, // Use the desired font size
+        fontSize: 18,
         paddingBottom: Platform.OS === "ios" ? 0 : 5,
         color: focused ? COLORS.primary : COLORS.gray,
       }}
@@ -42,7 +42,7 @@ const TabLabel = ({ focused, text }) => {
 };
 
 export default function _layout() {
-  const tabBarHeight = screenHeight < 700 ? 60 : 90; // Example conditional sizing
+  const tabBarHeight = screenHeight < 700 ? 60 : 90;
 
   return (
     <>
@@ -59,9 +59,32 @@ export default function _layout() {
             height: Platform.OS === "ios" ? tabBarHeight : 60,
             borderRadius: 10,
           },
+          headerStyle: {
+            backgroundColor: "#fff",
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: "#E5E5E5",
+          },
+          headerTitleStyle: {
+            fontSize: 20,
+            fontWeight: "600",
+            color: COLORS.primary,
+          },
+          headerTintColor: COLORS.primary,
         }}
         initialRouteName="home"
       >
+        <Tabs.Screen
+          name="home/index"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} iconName="home" />
+            ),
+            tabBarLabel: () => null,
+            headerShown: false,
+          }}
+        />
         <Tabs.Screen
           name="lecture"
           options={{
@@ -70,6 +93,7 @@ export default function _layout() {
             ),
             tabBarLabel: () => null,
             headerTitle: "Lecture",
+            headerShown: true,
           }}
         />
         <Tabs.Screen
@@ -79,19 +103,11 @@ export default function _layout() {
               <TabIcon focused={focused} iconName="calendar" />
             ),
             tabBarLabel: () => null,
-            headerTitle: "Academics",
+            headerTitle: "Attendance",
+            headerShown: true,
           }}
         />
-        <Tabs.Screen
-          name="home"
-          options={{
-            tabBarIcon: ({ focused }) => (
-              <TabIcon focused={focused} iconName="home" />
-            ),
-            tabBarLabel: () => null,
-            headerTitle: "Home",
-          }}
-        />
+        
         <Tabs.Screen
           name="assignment"
           options={{
@@ -99,17 +115,8 @@ export default function _layout() {
               <TabIcon focused={focused} iconName="book" />
             ),
             tabBarLabel: () => null,
-            headerTitle: "Assignment",
-          }}
-        />
-        <Tabs.Screen
-          name="fees"
-          options={{
-            tabBarIcon: ({ focused }) => (
-              <TabIcon focused={focused} iconName="creditcard" />
-            ),
-            tabBarLabel: () => null,
-            headerTitle: "Fees",
+            headerTitle: "Assignments",
+            headerShown: true,
           }}
         />
       </Tabs>
@@ -117,3 +124,4 @@ export default function _layout() {
     </>
   );
 }
+

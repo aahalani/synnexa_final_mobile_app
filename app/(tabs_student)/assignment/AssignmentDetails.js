@@ -14,6 +14,7 @@ import { useLocalSearchParams } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
+import { apiUploadFormData, ENDPOINTS } from "../../../services/apiService";
 
 const height = Dimensions.get("window").height;
 
@@ -22,6 +23,7 @@ const AssignmentDetails = () => {
   const [assignment, setAssignment] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     try {
@@ -48,8 +50,6 @@ const AssignmentDetails = () => {
         multiple: true,
       });
 
-      console.log("DocumentPicker result:", result);
-
       if (!result.canceled) {
         if (result.assets && result.assets.length > 0) {
           // Multiple files selected
@@ -70,8 +70,6 @@ const AssignmentDetails = () => {
           };
           setSelectedFiles((prevFiles) => [...prevFiles, fileInfo]);
         }
-      } else {
-        console.log("Document picking canceled or dismissed");
       }
     } catch (err) {
       console.error("Error picking document:", err);
@@ -126,7 +124,45 @@ const AssignmentDetails = () => {
       alert("Please select at least one file to submit");
       return;
     }
-    console.log("Files to upload:", selectedFiles);
+    setIsSubmitting(true);
+    try {
+      // Try multiple possible field names for assignment ID (handles API variations)
+      const studentAssignmentId =
+        assignment?.studentAssignmenId || // Note: typo in API field name (missing 't')
+        assignment?.studentAssignmentId || // Correct spelling
+        assignment?.assignmentId; // Fallback
+
+      if (!studentAssignmentId) {
+        alert("Missing assignment id. Cannot upload.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Upload each file using form-data key 'file' as per backend requirement
+      for (const file of selectedFiles) {
+        const form = new FormData();
+        const uri = file.uri;
+        const name = file.name || `upload_${Date.now()}`;
+        const type = file.type || "application/octet-stream";
+
+        form.append("file", {
+          uri,
+          name,
+          type,
+        });
+
+        const endpoint = `${ENDPOINTS.STUDENT_ASSIGNMENT_UPLOAD}?${new URLSearchParams({ studentAssignmenId: String(studentAssignmentId) })}`;
+        await apiUploadFormData(endpoint, form);
+      }
+
+      alert("Uploaded successfully.");
+      setSelectedFiles([]);
+    } catch (err) {
+      console.error("Upload failed", err);
+      alert(err?.message || "Upload failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -242,8 +278,19 @@ const AssignmentDetails = () => {
         ))}
 
         {selectedFiles.length > 0 && (
-          <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
-            <Text style={styles.submitButtonText}>Submit Files</Text>
+          <TouchableOpacity
+            onPress={isSubmitting ? undefined : handleSubmit}
+            style={[
+              styles.submitButton,
+              isSubmitting ? { opacity: 0.7 } : null,
+            ]}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.submitButtonText}>Submit Files</Text>
+            )}
           </TouchableOpacity>
         )}
       </View>

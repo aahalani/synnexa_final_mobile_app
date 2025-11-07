@@ -1,11 +1,9 @@
 import { View, Image, StyleSheet } from 'react-native';
 import React, { useEffect } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
 import { getUser } from '../services/authService';
 
 const SplashScreen = () => {
-  const navigation = useNavigation();
-
   useEffect(() => {
     const checkUser = async () => {
       // Add a small delay for the splash screen effect
@@ -15,20 +13,51 @@ const SplashScreen = () => {
 
       if (user) {
         // User is logged in, navigate based on their role
-        const role = user.selectedRoleDto.roleName;
-        if (role === 'Tutor') {
-          navigation.replace('(tabs_faculty)');
+        // Use the same role determination logic as login screen
+        let role = user.selectedRoleDto?.roleName;
+        
+        // If selectedRoleDto is null, check roleDtoList for Faculty or Student
+        if (!role && user.roleDtoList && user.roleDtoList.length > 0) {
+          const facultyRole = user.roleDtoList.find(r => r.roleName === 'Faculty' && r.isActive);
+          const studentRole = user.roleDtoList.find(r => r.roleName === 'Student' && r.isActive);
+          
+          if (facultyRole) {
+            role = 'Faculty';
+          } else if (studentRole) {
+            role = 'Student';
+          }
+        }
+        
+        // Fallback: determine role by DTO presence if still not found
+        if (!role) {
+          if (user.facultyDto) {
+            role = 'Faculty';
+          } else if (user.studentRegistrationDto) {
+            role = 'Student';
+          }
+        }
+
+        if (user.isActive) {
+          if (role === 'Faculty' || role === 'Tutor') {
+            router.replace('(tabs_faculty)/home');
+          } else if (role === 'Student') {
+            router.replace('(tabs_student)/home');
+          } else {
+            // Invalid role, navigate to login
+            router.replace('(auth)');
+          }
         } else {
-          navigation.replace('(tabs_student)');
+          // Account not active, navigate to login
+          router.replace('(auth)');
         }
       } else {
         // No user, navigate to the login screen
-        navigation.replace('(auth)');
+        router.replace('(auth)');
       }
     };
 
     checkUser();
-  }, [navigation]);
+  }, []);
 
   return (
     <View style={styles.container}>

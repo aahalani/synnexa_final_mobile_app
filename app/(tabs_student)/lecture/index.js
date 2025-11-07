@@ -4,19 +4,18 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  FlatList,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
   Alert,
-  Platform, // Import Platform API
+  Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import * as MediaLibrary from 'expo-media-library'; // Import MediaLibrary
+import * as MediaLibrary from 'expo-media-library';
 import { apiFetch, ENDPOINTS } from '../../../services/apiService';
 import { COLORS } from '../../../constants';
+import { AntDesign } from '@expo/vector-icons';
 
 const LectureScreen = () => {
   const [data, setData] = useState(null);
@@ -24,14 +23,13 @@ const LectureScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [downloadingId, setDownloadingId] = useState(null);
 
-  // No changes to fetchData, useEffect, or onRefresh
   const fetchData = useCallback(async () => {
     try {
       const endpoint = `${ENDPOINTS.STUDENT_DASHBOARD}?${new URLSearchParams({ tabConstant: 'Course Content' })}`;
       const response = await apiFetch(endpoint);
       setData(response);
     } catch (error) {
-      Alert.alert('Error', 'Failed to fetch lecture content.');
+      Alert.alert('Error', error.message || 'Failed to fetch lecture content.');
       console.error('Error fetching lecture data:', error);
     } finally {
       setIsLoading(false);
@@ -48,11 +46,6 @@ const LectureScreen = () => {
     fetchData();
   };
 
-  /**
-   * Handles downloading an attachment.
-   * - On Android: Saves the file directly to the user's media library (Downloads/Pictures).
-   * - On iOS: Opens the native share/save dialog.
-   */
   const handleDownload = async (attachment) => {
     if (downloadingId) return;
 
@@ -63,27 +56,22 @@ const LectureScreen = () => {
 
     setDownloadingId(attachment.lectureContentUploadId);
 
-    // Define a temporary file path in the app's cache directory
     const fileUri = FileSystem.cacheDirectory + attachment.originalFileName;
 
     try {
-      // Write the base64 string to the temporary file
       await FileSystem.writeAsStringAsync(fileUri, attachment.fileBase64String, {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      // --- Platform-specific logic ---
       if (Platform.OS === 'android') {
         const { status } = await MediaLibrary.requestPermissionsAsync();
         if (status !== 'granted') {
           Alert.alert('Permission Required', 'Please grant permission to save files to your device.');
           return;
         }
-
         await MediaLibrary.saveToLibraryAsync(fileUri);
-        Alert.alert('Success', `File saved to your gallery or downloads folder.`);
-
-      } else { // iOS and other platforms
+        Alert.alert('Success', 'File saved to your gallery or downloads folder.');
+      } else {
         if (!(await Sharing.isAvailableAsync())) {
           Alert.alert('Error', 'Sharing is not available on your device.');
           return;
@@ -94,154 +82,292 @@ const LectureScreen = () => {
       console.error('Error during file download/saving:', error);
       Alert.alert('Download Error', 'Could not save the file.');
     } finally {
-      setDownloadingId(null); // Reset downloading state
+      setDownloadingId(null);
     }
   };
 
-
-  const renderAttachmentItem = ({ item }) => {
-    const isDownloadingThis = downloadingId === item.lectureContentUploadId;
-    
-    return (
-      <TouchableOpacity 
-        style={styles.attachmentItem} 
-        onPress={() => handleDownload(item)}
-        disabled={isDownloadingThis}
-      >
-        {isDownloadingThis ? (
-          <ActivityIndicator size="small" color={COLORS.primary} />
-        ) : (
-          <Ionicons
-            name={item.fileContentType.startsWith('image') ? 'image-outline' : 'document-outline'}
-            size={24}
-            color={COLORS.primary}
-          />
-        )}
-        <Text style={styles.attachmentName} numberOfLines={1}>{item.originalFileName}</Text>
-      </TouchableOpacity>
-    );
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0 || isNaN(bytes)) return '0 B';
+    try {
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      const size = Math.round(bytes / Math.pow(k, i) * 100) / 100;
+      if (isNaN(size) || !isFinite(size)) return '0 B';
+      return String(size) + ' ' + sizes[i];
+    } catch (e) {
+      return '0 B';
+    }
   };
-  
-  const renderLectureItem = ({ item }) => (
-    <View style={styles.lectureCard}>
-      <View style={styles.lectureHeader}>
-        <Text style={styles.lectureTitle}>{item.lectureTitle}</Text>
-        <Text style={styles.lectureDate}>{item.lectureDateStr}</Text>
-      </View>
-      {item.lectureContentUploadDtoList && item.lectureContentUploadDtoList.length > 0 && (
-        <View style={styles.attachmentsContainer}>
-          <Text style={styles.attachmentsLabel}>Attachments:</Text>
-          <FlatList
-            data={item.lectureContentUploadDtoList}
-            renderItem={renderAttachmentItem}
-            keyExtractor={(attachment) => attachment.lectureContentUploadId.toString()}
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-          />
-        </View>
-      )}
-    </View>
-  );
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    } catch (e) {
+      return dateStr;
+    }
+  };
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
+  const lectureList = data?.lectureContentDtoList || [];
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 100 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <Text style={styles.header}>Lecture Content</Text>
-      {data && data.lectureContentDtoList && data.lectureContentDtoList.length > 0 ? (
-        <FlatList
-          data={data.lectureContentDtoList}
-          renderItem={renderLectureItem}
-          keyExtractor={(item) => item.lectureContentId.toString()}
-          scrollEnabled={false}
-        />
-      ) : (
-        <Text style={styles.noDataMessage}>No lecture content available.</Text>
-      )}
-    </ScrollView>
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {lectureList.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <AntDesign name="filetext1" size={64} color={COLORS.gray} />
+            <Text style={styles.emptyText}>No Lecture Content</Text>
+            <Text style={styles.emptySubtext}>
+              Lecture materials will appear here when available
+            </Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.headerSection}>
+              <Text style={styles.sectionTitle}>Lecture Content</Text>
+              <Text style={styles.sectionSubtitle}>
+                {lectureList.length} {lectureList.length === 1 ? 'lecture' : 'lectures'} available
+              </Text>
+            </View>
+            {lectureList.map((item, index) => {
+              const attachments = item.lectureContentUploadDtoList || [];
+              
+              // Generate stable unique key for lecture card
+              const lectureKey = item.lectureContentId 
+                ? String(item.lectureContentId)
+                : `${item.lectureTitle || 'lecture'}-${item.lectureDateStr || item.lectureDate || index}`;
+              
+              return (
+                <View key={lectureKey} style={styles.lectureCard}>
+                  <View style={styles.lectureHeader}>
+                    <View style={styles.lectureHeaderLeft}>
+                      <AntDesign name="filetext1" size={24} color={COLORS.primary} />
+                      <View style={styles.lectureTitleContainer}>
+                        <Text style={styles.lectureTitle}>{item.lectureTitle || 'Untitled Lecture'}</Text>
+                        <Text style={styles.lectureDate}>
+                          {formatDate(item.lectureDate) || item.lectureDateStr || 'N/A'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {attachments.length > 0 && (
+                    <View style={styles.attachmentsSection}>
+                      <View style={styles.attachmentsHeader}>
+                        <AntDesign name="paperclip" size={16} color={COLORS.gray} />
+                        <Text style={styles.attachmentsLabel}>
+                          {attachments.length} {attachments.length === 1 ? 'file' : 'files'}
+                        </Text>
+                      </View>
+                      {attachments.map((attachment, attIndex) => {
+                        const isDownloading = downloadingId === attachment.lectureContentUploadId;
+                        const isImage = attachment.fileContentType?.startsWith('image');
+                        
+                        // Generate stable unique key for attachment
+                        const attachmentKey = attachment.lectureContentUploadId
+                          ? String(attachment.lectureContentUploadId)
+                          : `${attachment.originalFileName || 'file'}-${attachment.fileSizeBytes || attachment.fileContentType || attIndex}`;
+                        
+                        return (
+                          <TouchableOpacity
+                            key={attachmentKey}
+                            style={styles.attachmentItem}
+                            onPress={() => handleDownload(attachment)}
+                            disabled={isDownloading}
+                            activeOpacity={0.7}
+                            accessible={true}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Download ${attachment.originalFileName || 'file'}`}
+                          >
+                            <View style={styles.attachmentIconContainer}>
+                              {isDownloading ? (
+                                <ActivityIndicator size="small" color={COLORS.primary} />
+                              ) : (
+                                <AntDesign
+                                  name={isImage ? 'picture' : 'file1'}
+                                  size={20}
+                                  color={COLORS.primary}
+                                />
+                              )}
+                            </View>
+                            <View style={styles.attachmentInfo}>
+                              <Text style={styles.attachmentName} numberOfLines={1}>
+                                {attachment.originalFileName || 'Unknown File'}
+                              </Text>
+                              <Text style={styles.attachmentSize}>
+                                {formatFileSize(attachment.fileSizeBytes)} • {attachment.fileExtension || 'No extension'}
+                              </Text>
+                            </View>
+                            {!isDownloading && (
+                              <AntDesign name="download" size={18} color={COLORS.gray} />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
-    padding: 16,
+    backgroundColor: '#fff',
   },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  headerSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: COLORS.gray,
   },
   lectureCard: {
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 2,
+    elevation: 2,
   },
   lectureHeader: {
+    marginBottom: 16,
+  },
+  lectureHeaderLeft: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  lectureTitleContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  lectureTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 4,
+  },
+  lectureDate: {
+    fontSize: 12,
+    color: COLORS.gray,
+  },
+  attachmentsSection: {
+    marginTop: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F5F5F5',
+  },
+  attachmentsHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
-  lectureTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
-  },
-  lectureDate: {
-    fontSize: 14,
-    color: '#666',
-  },
-  attachmentsContainer: {
-    marginTop: 8,
-  },
   attachmentsLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginLeft: 6,
   },
   attachmentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 12,
-    marginRight: 8,
-    minWidth: 50,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  attachmentIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#E8F5E9',
     justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  attachmentInfo: {
+    flex: 1,
   },
   attachmentName: {
     fontSize: 14,
+    fontWeight: '500',
     color: '#333',
-    marginLeft: 8,
-    maxWidth: 120, // Prevent long filenames from breaking layout
+    marginBottom: 2,
   },
-  noDataMessage: {
-    textAlign: 'center',
-    color: '#666',
-    fontSize: 16,
+  attachmentSize: {
+    fontSize: 12,
+    color: COLORS.gray,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 100,
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.primary,
     marginTop: 20,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 

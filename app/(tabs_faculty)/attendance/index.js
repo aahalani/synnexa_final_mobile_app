@@ -4,14 +4,15 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { router } from 'expo-router';
 import { apiFetch, ENDPOINTS } from '../../../services/apiService';
 import { COLORS } from '../../../constants';
+import { AntDesign } from '@expo/vector-icons';
 
 const AttendanceScreen = () => {
   const [data, setData] = useState(null);
@@ -20,11 +21,13 @@ const AttendanceScreen = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const endpoint = `${ENDPOINTS.STUDENT_DASHBOARD}?${new URLSearchParams({ tabConstant: 'Attendance' })}`;
-      const response = await apiFetch(endpoint);
+      const response = await apiFetch(ENDPOINTS.FACULTY_ATTENDANCE_MARK, {
+        method: 'GET',
+      });
+      console.log('[Attendance API Response]', JSON.stringify(response, null, 2));
       setData(response);
     } catch (error) {
-      Alert.alert('Error', 'Failed to fetch attendance data.');
+      Alert.alert('Error', error.message || 'Failed to fetch attendance data.');
       console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
@@ -41,11 +44,6 @@ const AttendanceScreen = () => {
     fetchData();
   };
 
-  const calculateAttendancePercentage = (present, absent) => {
-    const total = present + absent;
-    return total > 0 ? ((present / total) * 100).toFixed(1) : 0;
-  };
-
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -53,113 +51,188 @@ const AttendanceScreen = () => {
       </View>
     );
   }
-  
-  if (!data || !data.attendanceOverviewDtoList || data.attendanceOverviewDtoList.length === 0) {
-      return <Text style={{textAlign: 'center', marginTop: 20}}>No attendance data found.</Text>;
-  }
+
+  const batchList = data?.batchDtoList || [];
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <Text style={styles.header}>Attendance Overview</Text>
-      {data.attendanceOverviewDtoList.map((course, index) => (
-        <TouchableOpacity
-          key={index}
-          style={styles.courseCard}
-          onPress={() => {
-            router.push('(tabs_faculty)/attendance/Details');
-          }}
-        >
-          <Text style={styles.courseName}>{course.courseName}</Text>
-          <Text style={styles.batchName}>{course.batchName}</Text>
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{course.presentCount}</Text>
-              <Text style={styles.statLabel}>Present</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{course.absentCount}</Text>
-              <Text style={styles.statLabel}>Absent</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {calculateAttendancePercentage(
-                  course.presentCount,
-                  course.absentCount
-                )}
-                %
-              </Text>
-              <Text style={styles.statLabel}>Attendance</Text>
-            </View>
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {batchList.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <AntDesign name="calendar" size={64} color={COLORS.gray} />
+            <Text style={styles.emptyText}>No Batches Available</Text>
+            <Text style={styles.emptySubtext}>
+              There are no batches available for attendance marking
+            </Text>
           </View>
-          <Text style={styles.dateRange}>
-            {new Date(course.startDate).toLocaleDateString()} -{' '}
-            {new Date(course.endDate).toLocaleDateString()}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+        ) : (
+          <>
+            <View style={styles.headerSection}>
+              <Text style={styles.sectionTitle}>Select Batch</Text>
+              <Text style={styles.sectionSubtitle}>
+                {batchList.length} {batchList.length === 1 ? 'batch' : 'batches'} available
+              </Text>
+            </View>
+            {batchList.map((batch, index) => (
+              <TouchableOpacity
+                key={batch.batchId || index}
+                style={styles.batchCard}
+                activeOpacity={0.7}
+                onPress={() => {
+                  router.push({
+                    pathname: '/(tabs_faculty)/attendance/Details',
+                    params: {
+                      batch: JSON.stringify(batch),
+                      courses: JSON.stringify(data?.courseDtoList || []),
+                    },
+                  });
+                }}
+              >
+                <View style={styles.batchCardHeader}>
+                  <View style={styles.batchCodeContainer}>
+                    <AntDesign name="appstore1" size={20} color={COLORS.primary} />
+                    <Text style={[styles.batchCode, { marginLeft: 8 }]}>{batch.batchCode}</Text>
+                  </View>
+                  {batch.isActive && (
+                    <View style={styles.activeBadge}>
+                      <Text style={styles.activeBadgeText}>Active</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.batchName}>{batch.batchName}</Text>
+                <Text style={styles.batchDisplayName}>{batch.batchDisplayName}</Text>
+                {batch.branchId && (
+                  <View style={styles.batchInfo}>
+                    <Text style={styles.batchInfoText}>Branch ID: {batch.branchId}</Text>
+                  </View>
+                )}
+                {batch.admissionTo && (
+                  <View style={styles.batchInfo}>
+                    <Text style={styles.batchInfoText}>Admission To: Grade {batch.admissionTo}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#fff',
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
     padding: 16,
+    paddingBottom: 100,
   },
-  header: {
-    fontSize: 26,
-    fontWeight: 'bold',
+  headerSection: {
     marginBottom: 20,
-    color: '#333',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
   },
-  courseCard: {
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: COLORS.gray,
+  },
+  batchCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  courseName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: '#333',
-  },
-  batchName: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 12,
-  },
-  statsContainer: {
+  batchCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  statItem: {
+  batchCodeContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  statValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
+  batchCode: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
+  activeBadge: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  dateRange: {
+  activeBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  batchName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  batchDisplayName: {
     fontSize: 14,
-    color: '#999',
+    color: COLORS.gray,
+    marginBottom: 8,
+  },
+  batchInfo: {
+    marginTop: 4,
+  },
+  batchInfoText: {
+    fontSize: 12,
+    color: COLORS.gray,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 100,
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginTop: 20,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 
 export default AttendanceScreen;
+
