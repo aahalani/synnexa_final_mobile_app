@@ -206,6 +206,23 @@ const SearchLectureContentScreen = () => {
             </>
           )}
         </TouchableOpacity>
+
+        {/* Create New Lecture Button */}
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => {
+            router.push({
+              pathname: '/(tabs_faculty)/lecture/CreateLectureContent',
+              params: {
+                batch: JSON.stringify(batch),
+                course: JSON.stringify(course),
+              },
+            });
+          }}
+        >
+          <AntDesign name="pluscircle" size={20} color="#fff" />
+          <Text style={styles.createButtonText}>Create New Lecture Content</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -334,6 +351,21 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   searchButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+    marginLeft: 8,
+  },
+  createButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+  },
+  createButtonText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
