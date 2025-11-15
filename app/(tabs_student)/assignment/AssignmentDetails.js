@@ -6,17 +6,19 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Dimensions,
   ActivityIndicator,
+  Alert,
+  Platform,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import * as MediaLibrary from "expo-media-library";
 import { apiUploadFormData, ENDPOINTS } from "../../../services/apiService";
-
-const height = Dimensions.get("window").height;
+import { COLORS } from "../../../constants";
+import { AntDesign } from "@expo/vector-icons";
 
 const AssignmentDetails = () => {
   const params = useLocalSearchParams();
@@ -24,6 +26,7 @@ const AssignmentDetails = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   useEffect(() => {
     try {
@@ -37,7 +40,6 @@ const AssignmentDetails = () => {
         setAssignment(parsedData);
       }
     } catch (error) {
-      console.error("Error parsing assignment data:", error);
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +74,6 @@ const AssignmentDetails = () => {
         }
       }
     } catch (err) {
-      console.error("Error picking document:", err);
     }
   };
 
@@ -80,7 +81,7 @@ const AssignmentDetails = () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
 
     if (permissionResult.granted === false) {
-      alert("You've refused to allow this app to access your camera!");
+      Alert.alert("Permission Required", "You've refused to allow this app to access your camera!");
       return;
     }
 
@@ -110,8 +111,7 @@ const AssignmentDetails = () => {
         setSelectedFiles((prevFiles) => [...prevFiles, fileInfo]);
       }
     } catch (error) {
-      console.error("Error taking photo:", error);
-      alert("Failed to capture photo. Please try again.");
+      Alert.alert("Error", "Failed to capture photo. Please try again.");
     }
   };
 
@@ -119,35 +119,140 @@ const AssignmentDetails = () => {
     setSelectedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
 
+  const handleDownload = async (attachment) => {
+    if (downloadingId) return;
+
+    if (!attachment.fileBase64String) {
+      Alert.alert('Download Failed', 'No file content available to download.');
+      return;
+    }
+
+    setDownloadingId(attachment.assignmentUploadId || attachment.originalFileName);
+
+    let fileName = attachment.originalFileName || 'download';
+    if (!fileName.includes('.') && attachment.fileExtension) {
+      fileName = fileName + attachment.fileExtension;
+    } else if (!fileName.includes('.') && !attachment.fileExtension) {
+      const ext = attachment.fileContentType?.split('/')[1] || 'bin';
+      fileName = fileName + '.' + ext;
+    }
+
+    const fileUri = FileSystem.cacheDirectory + fileName;
+
+    try {
+      await FileSystem.writeAsStringAsync(fileUri, attachment.fileBase64String, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Detect file MIME type
+      const mimeType = attachment.fileContentType || '';
+      const isMediaFile = mimeType.startsWith('image/') || 
+                         mimeType.startsWith('video/') || 
+                         mimeType.startsWith('audio/');
+
+      if (Platform.OS === 'android') {
+        if (isMediaFile) {
+          // For media files, use MediaLibrary
+          try {
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission Required', 'Please grant permission to save media files to your device.');
+              return;
+            }
+            await MediaLibrary.saveToLibraryAsync(fileUri);
+            Alert.alert('Success', 'File saved to your gallery.');
+          } catch (error) {
+            Alert.alert('Download Error', 'Could not save the media file. Please try again.');
+          }
+        } else {
+          // For non-media documents, use sharing to let user pick save location
+          // This is the recommended approach for Android as it works with scoped storage
+          try {
+            if (!(await Sharing.isAvailableAsync())) {
+              // Fallback: try to copy to document directory if sharing not available
+              const downloadsPath = FileSystem.documentDirectory + fileName;
+              await FileSystem.copyAsync({
+                from: fileUri,
+                to: downloadsPath,
+              });
+              Alert.alert('Limited Access', 'File saved internally. You may not be able to access it from other apps.');
+              return;
+            }
+            await Sharing.shareAsync(fileUri, {
+              mimeType: mimeType || 'application/octet-stream',
+              dialogTitle: 'Save file',
+            });
+          } catch (error) {
+            Alert.alert('Download Error', 'Could not save the file. Please try again.');
+          }
+        }
+      } else {
+        // iOS - use sharing for all file types
+        if (!(await Sharing.isAvailableAsync())) {
+          Alert.alert('Error', 'Sharing is not available on your device.');
+          return;
+        }
+        await Sharing.shareAsync(fileUri, {
+          mimeType: mimeType || 'application/octet-stream',
+        });
+      }
+    } catch (error) {
+      Alert.alert('Download Error', 'Could not save the file.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0 || isNaN(bytes)) return '0 B';
+    try {
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      const size = Math.round(bytes / Math.pow(k, i) * 100) / 100;
+      if (isNaN(size) || !isFinite(size)) return '0 B';
+      return String(size) + ' ' + sizes[i];
+    } catch (e) {
+      return '0 B';
+    }
+  };
+
   const handleSubmit = async () => {
     if (selectedFiles.length === 0) {
-      alert("Please select at least one file to submit");
+      Alert.alert("Error", "Please select at least one file to submit");
       return;
     }
     setIsSubmitting(true);
     try {
-      // Try multiple possible field names for assignment ID (handles API variations)
       const studentAssignmentId =
-        assignment?.studentAssignmenId || // Note: typo in API field name (missing 't')
-        assignment?.studentAssignmentId || // Correct spelling
-        assignment?.assignmentId; // Fallback
+        assignment?.studentAssignmenId ||
+        assignment?.studentAssignmentId ||
+        assignment?.assignmentId;
 
       if (!studentAssignmentId) {
-        alert("Missing assignment id. Cannot upload.");
+        Alert.alert("Error", "Missing assignment id. Cannot upload.");
         setIsSubmitting(false);
         return;
       }
 
-      // Upload each file using form-data key 'file' as per backend requirement
       for (const file of selectedFiles) {
         const form = new FormData();
         const uri = file.uri;
-        const name = file.name || `upload_${Date.now()}`;
+        
+        let sanitizedName = (file.name || `upload_${Date.now()}`)
+          .replace(/[^a-zA-Z0-9._-]/g, '_')
+          .replace(/_{2,}/g, '_');
+        
+        if (!sanitizedName.includes('.')) {
+          const extension = file.type?.split('/')[1] || 'bin';
+          sanitizedName = `${sanitizedName}.${extension}`;
+        }
+        
         const type = file.type || "application/octet-stream";
 
-        form.append("file", {
+        form.append("abc", {
           uri,
-          name,
+          name: sanitizedName,
           type,
         });
 
@@ -155,11 +260,10 @@ const AssignmentDetails = () => {
         await apiUploadFormData(endpoint, form);
       }
 
-      alert("Uploaded successfully.");
+      Alert.alert("Success", "Uploaded successfully.");
       setSelectedFiles([]);
     } catch (err) {
-      console.error("Upload failed", err);
-      alert(err?.message || "Upload failed. Please try again.");
+      Alert.alert("Error", err?.message || "Upload failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -167,293 +271,482 @@ const AssignmentDetails = () => {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#4c669f" />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   if (!assignment) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text>No assignment data available</Text>
+      <View style={styles.loadingContainer}>
+        <AntDesign name="filetext1" size={64} color={COLORS.gray} />
+        <Text style={styles.emptyText}>No assignment data available</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.courseName}>{assignment.courseName}</Text>
-        <Text style={styles.batchName}>{assignment.batchName}</Text>
-      </View>
-
-      <Text style={styles.title}>{assignment.assignmentDetails}</Text>
-
-      <View style={styles.dateContainer}>
-        <Ionicons name="calendar-outline" size={20} color="#666" />
-        <Text style={styles.dateText}>
-          {assignment.fromDateStr} - {assignment.toDateStr}
-        </Text>
-      </View>
-
-      <View style={styles.infoContainer}>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Out of:</Text>
-          <Text style={styles.infoValue}>{assignment.outOff}</Text>
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Header Card */}
+        <View style={styles.headerCard}>
+          <View style={styles.headerTop}>
+            <View style={styles.courseInfo}>
+              <AntDesign name="book" size={24} color={COLORS.primary} />
+              <View style={styles.courseTextContainer}>
+                <Text style={styles.courseName}>{assignment.courseName || 'N/A'}</Text>
+                <Text style={styles.batchName}>{assignment.batchName || 'N/A'}</Text>
+              </View>
+            </View>
+            <View style={[
+              styles.statusBadge,
+              assignment.isStudentAssignmetSubmitted ? styles.statusBadgeSubmitted : styles.statusBadgePending
+            ]}>
+              <Text style={[
+                styles.statusText,
+                assignment.isStudentAssignmetSubmitted ? styles.statusTextSubmitted : styles.statusTextPending
+              ]}>
+                {assignment.isStudentAssignmetSubmitted ? 'Submitted' : 'Pending'}
+              </Text>
+            </View>
+          </View>
         </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Status:</Text>
-          <Text
-            style={[
-              styles.infoValue,
-              {
-                color: assignment.isStudentAssignmetSubmitted
-                  ? "#4CAF50"
-                  : "#F44336",
-              },
-            ]}
-          >
-            {assignment.isStudentAssignmetSubmitted
-              ? "Submitted"
-              : "Not Submitted"}
+
+        {/* Assignment Details Card */}
+        <View style={styles.detailsCard}>
+          <Text style={styles.sectionTitle}>Assignment Details</Text>
+          <Text style={styles.assignmentDetails}>
+            {assignment.assignmentDetails || 'No details available'}
           </Text>
-        </View>
-      </View>
 
-      {assignment.assignmentUploadDtoList?.length > 0 && (
-        <View style={styles.attachmentsContainer}>
-          <Text style={styles.attachmentsLabel}>Attachments:</Text>
-          {assignment.assignmentUploadDtoList.map((attachment, index) => (
-            <View key={index} style={styles.attachmentItem}>
-              <Ionicons name="document-outline" size={24} color="#4c669f" />
-              <Text style={styles.attachmentName}>
-                {attachment.originalFileName}
+          <View style={styles.infoContainer}>
+            <View style={styles.infoRow}>
+              <AntDesign name="calendar" size={16} color={COLORS.gray} />
+              <Text style={styles.infoText}>
+                {assignment.fromDateStr || 'N/A'} - {assignment.toDateStr || 'N/A'}
               </Text>
             </View>
-          ))}
-        </View>
-      )}
-
-      <View style={styles.submissionContainer}>
-        <Text style={styles.submissionLabel}>Your Submission:</Text>
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.filePickerButton}
-            onPress={pickDocument}
-          >
-            <Ionicons name="attach-outline" size={24} color="#fff" />
-            <Text style={styles.filePickerButtonText}>Add Files</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.cameraButton} onPress={takePhoto}>
-            <Ionicons name="camera-outline" size={24} color="#fff" />
-            <Text style={styles.filePickerButtonText}>Take Photo</Text>
-          </TouchableOpacity>
-        </View>
-
-        {selectedFiles.map((file, index) => (
-          <View key={index} style={styles.fileItem}>
-            {file.type?.startsWith("image/") ? (
-              <Image source={{ uri: file.uri }} style={styles.thumbnail} />
-            ) : (
-              <Ionicons name="document-outline" size={24} color="#4c669f" />
+            <View style={styles.infoRow}>
+              <AntDesign name="star" size={16} color={COLORS.gray} />
+              <Text style={styles.infoText}>Out of: {assignment.outOff || 0} marks</Text>
+            </View>
+            {assignment.obtainedMarks !== null && assignment.obtainedMarks !== undefined && (
+              <View style={styles.infoRow}>
+                <AntDesign name="checkcircle" size={16} color="#4CAF50" />
+                <Text style={[styles.infoText, { color: '#4CAF50', fontWeight: '600' }]}>
+                  Obtained: {assignment.obtainedMarks} marks
+                </Text>
+              </View>
             )}
-            <View style={styles.fileInfo}>
-              <Text style={styles.fileName} numberOfLines={1}>
-                {file.name}
-              </Text>
-              <Text style={styles.fileSize}>
-                {(file.size / 1024).toFixed(2)} KB
-              </Text>
+          </View>
+        </View>
+
+        {/* Attachments Card */}
+        {assignment.assignmentUploadDtoList?.length > 0 && (
+          <View style={styles.attachmentsCard}>
+            <View style={styles.sectionHeader}>
+              <AntDesign name="paperclip" size={18} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Attachments</Text>
             </View>
+            {assignment.assignmentUploadDtoList.map((attachment, index) => {
+              const isDownloading = downloadingId === (attachment.assignmentUploadId || attachment.originalFileName);
+              const isImage = attachment.fileContentType?.startsWith('image');
+              const hasBase64 = !!attachment.fileBase64String;
+              
+              return (
+                <TouchableOpacity
+                  key={attachment.assignmentUploadId || index}
+                  style={styles.attachmentItem}
+                  onPress={() => hasBase64 && handleDownload(attachment)}
+                  disabled={isDownloading || !hasBase64}
+                  activeOpacity={hasBase64 ? 0.7 : 1}
+                >
+                  <View style={styles.attachmentIconContainer}>
+                    {isDownloading ? (
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                    ) : (
+                      <AntDesign
+                        name={isImage ? 'picture' : 'file1'}
+                        size={20}
+                        color={hasBase64 ? COLORS.primary : COLORS.gray2}
+                      />
+                    )}
+                  </View>
+                  <View style={styles.attachmentInfo}>
+                    <Text style={[styles.attachmentName, !hasBase64 && styles.attachmentNameDisabled]} numberOfLines={1}>
+                      {attachment.originalFileName || 'Unknown File'}
+                    </Text>
+                    <Text style={styles.attachmentSize}>
+                      {formatFileSize(attachment.fileSizeBytes)} • {attachment.fileExtension || ''}
+                    </Text>
+                  </View>
+                  {!isDownloading && hasBase64 && (
+                    <AntDesign name="download" size={18} color={COLORS.gray} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Submission Section Card */}
+        <View style={styles.submissionCard}>
+          <View style={styles.sectionHeader}>
+            <AntDesign name="upload" size={18} color={COLORS.primary} />
+            <Text style={styles.sectionTitle}>Your Submission</Text>
+          </View>
+
+          <View style={styles.buttonContainer}>
             <TouchableOpacity
-              onPress={() => removeFile(index)}
-              style={styles.removeButton}
+              style={styles.actionButton}
+              onPress={pickDocument}
             >
-              <Ionicons name="close-circle-outline" size={24} color="#F44336" />
+              <AntDesign name="paperclip" size={20} color={COLORS.white} />
+              <Text style={styles.actionButtonText}>Add Files</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.cameraButton]}
+              onPress={takePhoto}
+            >
+              <AntDesign name="camera" size={20} color={COLORS.white} />
+              <Text style={styles.actionButtonText}>Take Photo</Text>
             </TouchableOpacity>
           </View>
-        ))}
 
-        {selectedFiles.length > 0 && (
-          <TouchableOpacity
-            onPress={isSubmitting ? undefined : handleSubmit}
-            style={[
-              styles.submitButton,
-              isSubmitting ? { opacity: 0.7 } : null,
-            ]}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.submitButtonText}>Submit Files</Text>
-            )}
-          </TouchableOpacity>
-        )}
-      </View>
-    </ScrollView>
+          {selectedFiles.length > 0 && (
+            <>
+              <View style={styles.selectedFilesContainer}>
+                {selectedFiles.map((file, index) => (
+                  <View key={index} style={styles.selectedFileItem}>
+                    <View style={styles.selectedFileIcon}>
+                      {file.type?.startsWith("image/") ? (
+                        <Image source={{ uri: file.uri }} style={styles.thumbnail} />
+                      ) : (
+                        <AntDesign name="file1" size={20} color={COLORS.primary} />
+                      )}
+                    </View>
+                    <View style={styles.selectedFileInfo}>
+                      <Text style={styles.selectedFileName} numberOfLines={1}>
+                        {file.name}
+                      </Text>
+                      <Text style={styles.selectedFileSize}>
+                        {formatFileSize(file.size)}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => removeFile(index)}
+                      style={styles.removeButton}
+                    >
+                      <AntDesign name="closecircle" size={20} color="#F44336" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                onPress={isSubmitting ? undefined : handleSubmit}
+                style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <>
+                    <AntDesign name="checkcircle" size={20} color={COLORS.white} />
+                    <Text style={styles.submitButtonText}>Submit Files</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
-  centerContent: {
-    justifyContent: "center",
-    alignItems: "center",
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  content: {
     flex: 1,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  headerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  courseInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  courseTextContainer: {
+    marginLeft: 12,
+    flex: 1,
   },
   courseName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 4,
   },
   batchName: {
-    fontSize: 16,
-    color: "#666",
+    fontSize: 14,
+    color: COLORS.gray,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  statusBadgeSubmitted: {
+    backgroundColor: '#E8F5E9',
+  },
+  statusBadgePending: {
+    backgroundColor: '#FFF3E0',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  statusTextSubmitted: {
+    color: '#4CAF50',
+  },
+  statusTextPending: {
+    color: '#FF9800',
+  },
+  detailsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  dateContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  dateText: {
+  sectionTitle: {
     fontSize: 16,
-    color: "#666",
+    fontWeight: '700',
+    color: COLORS.primary,
     marginLeft: 8,
+  },
+  assignmentDetails: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+    marginBottom: 16,
   },
   infoContainer: {
-    backgroundColor: "#f0f0f0",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F5F5F5',
   },
   infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
-  infoLabel: {
-    fontSize: 16,
-    color: "#666",
+  infoText: {
+    fontSize: 13,
+    color: COLORS.gray,
+    marginLeft: 8,
   },
-  infoValue: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  attachmentsContainer: {
+  attachmentsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 16,
-  },
-  attachmentsLabel: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   attachmentItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  attachmentIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  attachmentInfo: {
+    flex: 1,
   },
   attachmentName: {
-    fontSize: 16,
-    color: "#000",
-    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 4,
   },
-  submissionContainer: {
-    marginTop: 16,
+  attachmentNameDisabled: {
+    color: COLORS.gray2,
   },
-  submissionLabel: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
+  attachmentSize: {
+    fontSize: 12,
+    color: COLORS.gray,
+  },
+  submissionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    gap: 12,
     marginBottom: 16,
   },
-  filePickerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#4c669f",
-    padding: 12,
-    borderRadius: 8,
+  actionButton: {
     flex: 1,
-    marginRight: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    padding: 14,
+    borderRadius: 8,
   },
   cameraButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#4CAF50",
-    padding: 12,
-    borderRadius: 8,
-    flex: 1,
+    backgroundColor: '#4CAF50',
+  },
+  actionButtonText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '600',
     marginLeft: 8,
   },
-  filePickerButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    marginLeft: 8,
+  selectedFilesContainer: {
+    marginBottom: 16,
   },
-  fileItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f0f0f0",
+  selectedFileItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 12,
+    backgroundColor: '#F8F9FA',
     borderRadius: 8,
     marginBottom: 8,
   },
-  fileInfo: {
-    flex: 1,
-    marginLeft: 8,
-  },
-  fileName: {
-    fontSize: 14,
-    color: "#333",
-    marginBottom: 2,
-  },
-  fileSize: {
-    fontSize: 12,
-    color: "#666",
+  selectedFileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   thumbnail: {
     width: 40,
     height: 40,
-    borderRadius: 4,
+    borderRadius: 8,
+  },
+  selectedFileInfo: {
+    flex: 1,
+  },
+  selectedFileName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 4,
+  },
+  selectedFileSize: {
+    fontSize: 12,
+    color: COLORS.gray,
   },
   removeButton: {
     padding: 4,
   },
   submitButton: {
-    backgroundColor: "#4c669f",
-    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    padding: 14,
     borderRadius: 8,
-    marginTop: 16,
+    gap: 8,
+  },
+  submitButtonDisabled: {
+    opacity: 0.7,
   },
   submitButtonText: {
-    color: "#fff",
+    color: COLORS.white,
     fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
+    fontWeight: '600',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: COLORS.gray,
+    marginTop: 16,
   },
 });
 

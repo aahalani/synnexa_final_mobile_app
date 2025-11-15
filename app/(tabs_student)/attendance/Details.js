@@ -1,575 +1,493 @@
-import React, { useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  FlatList,
-  Dimensions,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-
-const height = Dimensions.get("window").height;
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+} from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { apiFetch, ENDPOINTS } from '../../../services/apiService';
+import { getUser } from '../../../services/authService';
+import { COLORS } from '../../../constants';
+import { AntDesign } from '@expo/vector-icons';
 
 const Details = () => {
-  const courseData = {
-    courseDto: {
-      courseId: 2,
-      code: "001",
-      name: "Azure Development",
-      description: "Azure Description",
-      hours: 45,
-      credits: 3,
-      comments: "No Comments",
-      isActive: true,
-      isActiveId: 7,
-      branchId: 10,
-      createdOn: "2023-12-17T21:00:27.673",
-      modifiedOn: "2024-04-17T15:16:25.467",
-      createdBy: 1,
-      modifiedBy: 1,
-      isSelected: false,
-      courseDisplayName: "001-Azure Development",
-    },
-    attendanceOverviewDtoList: [],
-    attendanceDetailsDtoList: [
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-03-06T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-28T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-06T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-03-05T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: false,
-        attendanceDate: "2024-02-29T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-12T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-08T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-26T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-07T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-14T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: false,
-        attendanceDate: "2024-03-07T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-13T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-27T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-21T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-05T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-01T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-03-04T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-19T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-20T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: true,
-        attendanceDate: "2024-02-15T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-      {
-        studentId: 1,
-        courseId: 2,
-        batchId: 1,
-        facultyId: 1,
-        isPresent: false,
-        attendanceDate: "2024-02-22T00:00:00",
-        facultyCode: "F240201",
-        facultyFirstName: "Chunilal",
-        facultyLastName: "Malhotra",
-        attendancePercentage: null,
-      },
-    ],
-    paymentDto: {
-      paymentId: 0,
-      studentId: 0,
-      receiptNo: null,
-      actualAmt: 0,
-      discountPercent: 0,
-      finalAmt: 0,
-      createdBy: 0,
-      createdOn: "0001-01-01T00:00:00",
-      modifiedBy: null,
-      modifiedOn: null,
-      paymentLogDtoList: [],
-      studentRegistrationDto: {
-        studentId: 0,
-        titleId: 0,
-        lastName: null,
-        firstName: null,
-        nickName: null,
-        maidenName: null,
-        addr1: null,
-        addr2: null,
-        districtId: 0,
-        stateId: 0,
-        zipcode: null,
-        mobileNo: null,
-        genderId: 0,
-        dateOfBirth: "0001-01-01T00:00:00",
-        dateOfBirthStr: "",
-        emailId: null,
-        fatherName: null,
-        fatherMobileNo: null,
-        fatherEmailId: null,
-        motherName: null,
-        motherMobileNo: null,
-        motherEmailId: null,
-        stuNum: null,
-        isActive: false,
-        comment: null,
-        registrationDate: "0001-01-01T00:00:00",
-        registrationDateStr: "",
-        photoId: "00000000-0000-0000-0000-000000000000",
-        createdOn: "0001-01-01T00:00:00",
-        modifiedOn: null,
-        isActiveId: 0,
-        admissionTo: 0,
-        courseDtoList: [],
-        studentFullName: "",
-        password: null,
-        branchId: 0,
-        studentCourseId: "00000000-0000-0000-0000-000000000000",
-        stateName: null,
-        districtName: null,
-      },
-    },
-    lectureContentDtoList: [],
-    assignmentDtoList: [],
+  const params = useLocalSearchParams();
+  const course = useMemo(() => {
+    try {
+      return params.course ? JSON.parse(params.course) : null;
+    } catch (error) {
+      console.error('Error parsing course param:', error);
+      return null;
+    }
+  }, [params.course]);
+
+  const [attendanceData, setAttendanceData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [studentId, setStudentId] = useState(null);
+
+  // Get studentId from user context
+  useEffect(() => {
+    const fetchStudentId = async () => {
+      try {
+        const user = await getUser();
+        if (user?.studentRegistrationDto?.studentId) {
+          setStudentId(user.studentRegistrationDto.studentId);
+        } else if (user?.userId) {
+          setStudentId(user.userId);
+        }
+      } catch (error) {
+        console.error('Error fetching student ID:', error);
+      }
+    };
+    fetchStudentId();
+  }, []);
+
+  // Build the request body based on the API structure from the image
+  const buildRequestBody = useCallback(() => {
+    if (!course) return null;
+    
+    return {
+      studentId: studentId || course.studentId || 0,
+      courseId: course.id || course.courseId || 0,
+      courseCode: course.courseCode || '',
+      courseName: course.courseName || '',
+      batchId: course.batchId || 0,
+      batchCode: course.batchCode || '',
+      batchName: course.batchName || '',
+      startDate: course.startDate || new Date().toISOString(),
+      endDate: course.endDate || new Date().toISOString(),
+      presentCount: course.presentCount || 0,
+      absentCount: course.absentCount || 0,
+      attendancePercentage: course.attendancePercentage || 0,
+    };
+  }, [course, studentId]);
+
+  const fetchAttendanceData = useCallback(async () => {
+    if (!course) {
+      setIsLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const requestBody = buildRequestBody();
+      if (!requestBody) {
+        setIsLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      const response = await apiFetch(ENDPOINTS.STUDENT_ATTENDANCE_OVERVIEW, {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+      });
+
+      // Handle response - it should be an array of attendance records
+      // If response is already an array, use it directly
+      // If it's wrapped in an object, try to extract the array
+      if (Array.isArray(response)) {
+        setAttendanceData(response);
+      } else if (response && Array.isArray(response.data)) {
+        setAttendanceData(response.data);
+      } else if (response && Array.isArray(response.attendanceDetailsDtoList)) {
+        setAttendanceData(response.attendanceDetailsDtoList);
+      } else {
+        // If response is not an array, set empty array
+        setAttendanceData([]);
+      }
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Failed to fetch attendance details.');
+      console.error('Error fetching attendance data:', error);
+      setAttendanceData([]);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  }, [course, buildRequestBody]);
+
+  useEffect(() => {
+    // Only fetch if we have both course and studentId
+    if (course && (studentId !== null || course.studentId)) {
+      fetchAttendanceData();
+    } else if (course) {
+      // If we have course but no studentId yet, wait a bit for studentId to load
+      const timer = setTimeout(() => {
+        if (studentId !== null || course.studentId) {
+          fetchAttendanceData();
+        } else {
+          setIsLoading(false);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setIsLoading(false);
+    }
+  }, [fetchAttendanceData, course, studentId]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchAttendanceData();
   };
 
-  const attendancePercentage = useMemo(() => {
-    const totalClasses = courseData.attendanceDetailsDtoList.length;
-    const presentClasses = courseData.attendanceDetailsDtoList.filter(
-      (a) => a.isPresent
-    ).length;
-    return totalClasses > 0
-      ? ((presentClasses / totalClasses) * 100).toFixed(1)
-      : 0;
-  }, [courseData.attendanceDetailsDtoList]);
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    } catch (e) {
+      return dateStr;
+    }
+  };
 
-  const renderAttendanceItem = ({ item }) => (
-    <View style={styles.attendanceItem}>
-      <Text style={styles.attendanceDate}>
-        {new Date(item.attendanceDate).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })}
-      </Text>
-      <View
-        style={[
-          styles.attendanceStatus,
-          { backgroundColor: item.isPresent ? "#4CAF50" : "#F44336" },
-        ]}
-      >
-        <Text style={styles.attendanceStatusText}>
-          {item.isPresent ? "Present" : "Absent"}
-        </Text>
+  // Calculate attendance statistics
+  const attendanceStats = useMemo(() => {
+    if (!attendanceData || !Array.isArray(attendanceData)) {
+      return { total: 0, present: 0, absent: 0, percentage: 0 };
+    }
+    const records = attendanceData;
+    const total = records.length;
+    const present = records.filter((r) => r.isPresent === true).length;
+    const absent = records.filter((r) => r.isPresent === false).length;
+    const percentage = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
+
+    return { total, present, absent, percentage };
+  }, [attendanceData]);
+
+  // Sort attendance records by date (newest first)
+  const sortedAttendanceRecords = useMemo(() => {
+    if (!attendanceData || !Array.isArray(attendanceData)) return [];
+    return [...attendanceData].sort((a, b) => {
+      const dateA = new Date(a.attendanceDate || 0);
+      const dateB = new Date(b.attendanceDate || 0);
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [attendanceData]);
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <AntDesign name="arrowleft" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Attendance Details</Text>
+            <Text style={styles.headerSubtitle}>
+              {course?.courseName || course?.courseDisplayName || 'Course'}
+            </Text>
+          </View>
+          <View style={styles.placeholder} />
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
       </View>
-    </View>
-  );
+    );
+  }
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.courseName}>{courseData.courseDto.name}</Text>
-        <Text style={styles.courseCode}>{courseData.courseDto.code}</Text>
-      </View>
-
-      <View style={styles.infoContainer}>
-        <View style={styles.infoItem}>
-          <Ionicons name="time-outline" size={24} color="#4c669f" />
-          <Text style={styles.infoText}>
-            {courseData.courseDto.hours} hours
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <AntDesign name="arrowleft" size={24} color={COLORS.primary} />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Attendance Details</Text>
+          <Text style={styles.headerSubtitle}>
+            {course?.courseName || course?.courseDisplayName || 'Course'}
           </Text>
         </View>
-        <View style={styles.infoItem}>
-          <Ionicons name="star-outline" size={24} color="#4c669f" />
+        <View style={styles.placeholder} />
+      </View>
+
+      {/* Info Card */}
+      <View style={styles.infoCard}>
+        <View style={styles.infoRow}>
+          <AntDesign name="appstore1" size={16} color={COLORS.primary} />
+          <Text style={styles.infoText}>{course?.batchCode || course?.batchName || 'N/A'}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <AntDesign name="book" size={16} color={COLORS.primary} />
           <Text style={styles.infoText}>
-            {courseData.courseDto.credits} credits
+            {course?.courseCode || course?.courseName || 'N/A'}
           </Text>
         </View>
+        {attendanceStats.total > 0 && (
+          <View style={styles.infoRow}>
+            <AntDesign name="calendar" size={16} color={COLORS.primary} />
+            <Text style={styles.infoText}>
+              {attendanceStats.total} {attendanceStats.total === 1 ? 'record' : 'records'}
+            </Text>
+          </View>
+        )}
       </View>
 
-      <View style={styles.descriptionContainer}>
-        <Text style={styles.descriptionTitle}>Course Description</Text>
-        <Text style={styles.descriptionText}>
-          {courseData.courseDto.description}
-        </Text>
-      </View>
-
-      <View style={styles.attendanceOverview}>
-        <Text style={styles.attendanceOverviewLabel}>Overall Attendance</Text>
-        <View style={styles.attendancePercentageContainer}>
-          <Text style={styles.attendancePercentage}>
-            {attendancePercentage}%
-          </Text>
-          <View style={styles.attendanceBarBackground}>
-            <View
-              style={[
-                styles.attendanceBar,
-                { width: `${attendancePercentage}%` },
-              ]}
-            />
+      {/* Attendance Overview Stats */}
+      {attendanceStats.total > 0 && (
+        <View style={styles.statsCard}>
+          <View style={styles.statItem}>
+            <View style={[styles.statIconContainer, { backgroundColor: '#E8F5E9' }]}>
+              <AntDesign name="checkcircle" size={20} color="#4CAF50" />
+            </View>
+            <Text style={styles.statValue}>{attendanceStats.present}</Text>
+            <Text style={styles.statLabel}>Present</Text>
+          </View>
+          <View style={styles.statItem}>
+            <View style={[styles.statIconContainer, { backgroundColor: '#FFEBEE' }]}>
+              <AntDesign name="closecircle" size={20} color="#F44336" />
+            </View>
+            <Text style={styles.statValue}>{attendanceStats.absent}</Text>
+            <Text style={styles.statLabel}>Absent</Text>
+          </View>
+          <View style={styles.statItem}>
+            <View style={[styles.statIconContainer, { backgroundColor: attendanceStats.percentage >= 75 ? '#E8F5E9' : '#FFF3E0' }]}>
+              <AntDesign name="linechart" size={20} color={attendanceStats.percentage >= 75 ? '#4CAF50' : '#FF9800'} />
+            </View>
+            <Text style={[styles.statValue, { color: attendanceStats.percentage >= 75 ? '#4CAF50' : '#FF9800' }]}>
+              {attendanceStats.percentage}%
+            </Text>
+            <Text style={styles.statLabel}>Overall</Text>
           </View>
         </View>
-      </View>
+      )}
 
-      <Text style={styles.attendanceListHeader}>Attendance Details</Text>
-      <FlatList
-        data={courseData.attendanceDetailsDtoList}
-        renderItem={renderAttendanceItem}
-        keyExtractor={(item) => item.attendanceDate}
-        style={styles.attendanceList}
-        scrollEnabled={false}
-      />
-    </ScrollView>
+      {/* Attendance Records List */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {sortedAttendanceRecords.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <AntDesign name="calendar" size={64} color={COLORS.gray} />
+            <Text style={styles.emptyText}>No Attendance Records</Text>
+            <Text style={styles.emptySubtext}>
+              Your attendance records will appear here
+            </Text>
+          </View>
+        ) : (
+          sortedAttendanceRecords.map((record, index) => (
+            <View key={record.attendanceDate || index} style={styles.attendanceCard}>
+              <View style={styles.cardContent}>
+                <View style={styles.dateSection}>
+                  <AntDesign name="calendar" size={16} color={COLORS.primary} />
+                  <Text style={styles.attendanceDate}>
+                    {formatDate(record.attendanceDate)}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    record.isPresent ? styles.statusBadgePresent : styles.statusBadgeAbsent,
+                  ]}
+                >
+                  <AntDesign
+                    name={record.isPresent ? 'checkcircle' : 'closecircle'}
+                    size={14}
+                    color="#fff"
+                  />
+                  <Text style={styles.statusBadgeText}>
+                    {record.isPresent ? 'Present' : 'Absent'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f8f8",
-    marginBottom: height < 700 ? 60 : 90,
+    backgroundColor: '#fff',
   },
   header: {
-    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
   },
-  courseName: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 5,
+  backButton: {
+    padding: 8,
+    marginRight: 8,
   },
-  courseCode: {
-    fontSize: 18,
-    color: "#000",
+  headerContent: {
+    flex: 1,
   },
-  infoContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    padding: 20,
-    backgroundColor: "#fff",
-    marginTop: 20,
-    marginHorizontal: 20,
-    borderRadius: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
-  infoItem: {
-    flexDirection: "row",
-    alignItems: "center",
+  headerSubtitle: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginTop: 2,
+  },
+  placeholder: {
+    width: 40,
+  },
+  infoCard: {
+    flexDirection: 'row',
+    backgroundColor: '#F8F9FA',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+    justifyContent: 'space-around',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   infoText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: "#333",
+    fontSize: 14,
+    color: '#1A1A1A',
+    fontWeight: '600',
+    marginLeft: 8,
   },
-  descriptionContainer: {
-    backgroundColor: "#fff",
-    margin: 20,
-    padding: 20,
-    borderRadius: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+  statsCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 2,
+    elevation: 2,
+    justifyContent: 'space-around',
   },
-  descriptionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
+  statItem: {
+    alignItems: 'center',
   },
-  descriptionText: {
-    fontSize: 16,
-    color: "#666",
-    lineHeight: 24,
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  attendanceOverview: {
-    backgroundColor: "#fff",
-    margin: 20,
-    padding: 20,
-    borderRadius: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 4,
   },
-  attendanceOverviewLabel: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
+  statLabel: {
+    fontSize: 12,
+    color: COLORS.gray,
   },
-  attendancePercentageContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
-  },
-  attendancePercentage: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#4CAF50",
-    marginRight: 10,
-    width: 70,
-  },
-  attendanceBarBackground: {
+  content: {
     flex: 1,
-    height: 10,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 5,
   },
-  attendanceBar: {
-    height: 10,
-    backgroundColor: "#4CAF50",
-    borderRadius: 5,
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100,
   },
-  attendanceListHeader: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginLeft: 20,
-    marginTop: 20,
-    marginBottom: 10,
+  attendanceCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  attendanceList: {
-    marginHorizontal: 20,
-    borderRadius: 15,
+  cardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  attendanceItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+  dateSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   attendanceDate: {
-    fontSize: 16,
-    color: "#333",
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginLeft: 8,
   },
-  attendanceStatus: {
-    paddingVertical: 5,
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 10,
-    borderRadius: 20,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  attendanceStatusText: {
-    color: "#fff",
-    fontWeight: "bold",
+  statusBadgePresent: {
+    backgroundColor: '#4CAF50',
+  },
+  statusBadgeAbsent: {
+    backgroundColor: '#F44336',
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fff',
+    marginLeft: 4,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 100,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 

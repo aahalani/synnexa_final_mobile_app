@@ -13,6 +13,8 @@ import { useRouter, useFocusEffect, Stack } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import * as Font from 'expo-font';
+import Constants from 'expo-constants';
+import { StatusBar } from 'expo-status-bar';
 import { getUser, clearAuthData } from '../services/authService';
 
 export default function ProfileScreen() {
@@ -65,9 +67,6 @@ export default function ProfileScreen() {
         });
       }
     } catch (error) {
-      if (__DEV__) {
-        console.error('Error loading user data');
-      }
     } finally {
       setLoading(false);
     }
@@ -83,8 +82,6 @@ export default function ProfileScreen() {
       });
       setAssetsLoaded(true);
     } catch (error) {
-      console.error('Error loading fonts:', error);
-      // Set assets loaded anyway to prevent indefinite loading state
       setAssetsLoaded(true);
     }
   };
@@ -110,7 +107,6 @@ export default function ProfileScreen() {
                 routes: [{ name: '(auth)' }],
               });
             } catch (error) {
-              console.error('Error during logout:', error);
               Alert.alert('Error', 'Failed to logout. Please try again.');
             }
           },
@@ -130,6 +126,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" backgroundColor="#fff" />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -160,45 +157,15 @@ export default function ProfileScreen() {
 
         {/* Profile Options */}
         <View style={styles.optionsSection}>
-          <TouchableOpacity style={styles.optionItem}>
-            <View style={styles.optionLeft}>
-              <View style={styles.optionIcon}>
-                <Feather name="user" size={20} color="#1B4A99" />
-              </View>
-              <Text style={styles.optionText}>Edit Profile</Text>
-            </View>
-            <Feather name="chevron-right" size={20} color="#999" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.optionItem}>
-            <View style={styles.optionLeft}>
-              <View style={styles.optionIcon}>
-                <Feather name="settings" size={20} color="#1B4A99" />
-              </View>
-              <Text style={styles.optionText}>Settings</Text>
-            </View>
-            <Feather name="chevron-right" size={20} color="#999" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.optionItem}>
-            <View style={styles.optionLeft}>
-              <View style={styles.optionIcon}>
-                <Feather name="help-circle" size={20} color="#1B4A99" />
-              </View>
-              <Text style={styles.optionText}>Help & Support</Text>
-            </View>
-            <Feather name="chevron-right" size={20} color="#999" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.optionItem}>
+          <View style={styles.optionItem}>
             <View style={styles.optionLeft}>
               <View style={styles.optionIcon}>
                 <Feather name="info" size={20} color="#1B4A99" />
               </View>
               <Text style={styles.optionText}>About</Text>
             </View>
-            <Feather name="chevron-right" size={20} color="#999" />
-          </TouchableOpacity>
+            <Text style={styles.versionText}>Version {Constants.expoConfig?.version || Constants.manifest2?.extra?.expoClient?.version || '1.0.0'}</Text>
+          </View>
         </View>
 
         {/* Logout Button */}
@@ -322,6 +289,11 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
     color: '#333',
+    fontFamily: 'PlusJakartaSans',
+  },
+  versionText: {
+    fontSize: 14,
+    color: '#666',
     fontFamily: 'PlusJakartaSans',
   },
   logoutSection: {

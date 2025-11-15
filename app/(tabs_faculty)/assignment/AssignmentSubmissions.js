@@ -8,7 +8,12 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  Platform,
+  TextInput,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
 import { router, useLocalSearchParams } from 'expo-router';
 import { apiFetch, ENDPOINTS } from '../../../services/apiService';
 import { COLORS } from '../../../constants';
@@ -37,6 +42,11 @@ const AssignmentSubmissionsScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('Submitted');
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [marksInputs, setMarksInputs] = useState({});
+  const [remarksInputs, setRemarksInputs] = useState({});
+  const [savingId, setSavingId] = useState(null);
+  const [dirtyMap, setDirtyMap] = useState({});
 
   // Build the request body with required fields
   const buildRequestBody = useCallback((status) => {
@@ -94,6 +104,38 @@ const AssignmentSubmissionsScreen = () => {
     fetchData();
   }, [fetchData]);
 
+  // Initialize marks and remarks inputs when data changes
+  // Only update inputs for submissions that are not dirty (preserve unsaved edits)
+  useEffect(() => {
+    if (data?.studentAssignmentDtoList) {
+      setMarksInputs((prevMarks) => {
+        const updatedMarks = { ...prevMarks };
+        data.studentAssignmentDtoList.forEach((submission) => {
+          const id = submission.studentAssignmentId;
+          // Only update if this submission is not dirty
+          if (!dirtyMap[id]) {
+            updatedMarks[id] = submission.obtainedMarks !== null && submission.obtainedMarks !== undefined 
+              ? String(submission.obtainedMarks) 
+              : '';
+          }
+        });
+        return updatedMarks;
+      });
+      
+      setRemarksInputs((prevRemarks) => {
+        const updatedRemarks = { ...prevRemarks };
+        data.studentAssignmentDtoList.forEach((submission) => {
+          const id = submission.studentAssignmentId;
+          // Only update if this submission is not dirty
+          if (!dirtyMap[id]) {
+            updatedRemarks[id] = submission.facultyRemark || '';
+          }
+        });
+        return updatedRemarks;
+      });
+    }
+  }, [data, dirtyMap]);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchData();
@@ -124,6 +166,169 @@ const AssignmentSubmissionsScreen = () => {
       });
     } catch (e) {
       return dateStr;
+    }
+  };
+
+  const handleDownload = async (file) => {
+    if (downloadingId) return;
+
+    if (!file.fileBase64String) {
+      Alert.alert('Download Failed', 'No file content available to download.');
+      return;
+    }
+
+    setDownloadingId(file.studentAssignmentUploadId || file.originalFileName);
+
+    // Ensure file has proper extension
+    let fileName = file.originalFileName || 'download';
+    if (!fileName.includes('.') && file.fileExtension) {
+      fileName = fileName + file.fileExtension;
+    } else if (!fileName.includes('.') && !file.fileExtension) {
+      // Fallback: try to determine extension from content type
+      const ext = file.fileContentType?.split('/')[1] || 'bin';
+      fileName = fileName + '.' + ext;
+    }
+
+    const fileUri = FileSystem.cacheDirectory + fileName;
+
+    try {
+      await FileSystem.writeAsStringAsync(fileUri, file.fileBase64String, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      if (Platform.OS === 'android') {
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Required', 'Please grant permission to save files to your device.');
+          return;
+        }
+        await MediaLibrary.saveToLibraryAsync(fileUri);
+        Alert.alert('Success', 'File saved to your gallery or downloads folder.');
+      } else {
+        if (!(await Sharing.isAvailableAsync())) {
+          Alert.alert('Error', 'Sharing is not available on your device.');
+          return;
+        }
+        await Sharing.shareAsync(fileUri);
+      }
+    } catch (error) {
+      console.error('Error during file download/saving:', error);
+      Alert.alert('Download Error', 'Could not save the file.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleSave = async (submission) => {
+    if (savingId) return;
+
+    const studentAssignmentId = submission.studentAssignmentId;
+    if (!studentAssignmentId) {
+      Alert.alert('Error', 'Missing assignment ID. Cannot save.');
+      return;
+    }
+
+    setSavingId(studentAssignmentId);
+
+    try {
+      const marksValue = marksInputs[studentAssignmentId] || '';
+      const remarksValue = remarksInputs[studentAssignmentId] || '';
+      
+      // Parse marks - allow empty or numeric value
+      const obtainedMarks = marksValue.trim() === '' ? null : parseFloat(marksValue);
+      
+      if (marksValue.trim() !== '' && (isNaN(obtainedMarks) || obtainedMarks < 0)) {
+        Alert.alert('Error', 'Please enter a valid marks value (number >= 0).');
+        setSavingId(null);
+        return;
+      }
+
+      // Check if marks exceed total marks
+      const totalMarks = submission.assignmentDto?.outOff;
+      if (totalMarks !== null && totalMarks !== undefined && obtainedMarks !== null) {
+        if (obtainedMarks > totalMarks) {
+          Alert.alert('Error', `Obtained marks (${obtainedMarks}) cannot exceed total marks (${totalMarks}).`);
+          setSavingId(null);
+          return;
+        }
+      }
+
+      const requestBody = {
+        studentAssignmentId: studentAssignmentId,
+        assignmentId: submission.assignmentId || 0,
+        studentId: submission.studentId || 0,
+        batchId: batch?.batchId || 0,
+        courseId: course?.courseId || 0,
+        obtainedMarks: obtainedMarks,
+        facultyRemark: remarksValue.trim() || null,
+        status: submission.status || 'Submitted',
+      };
+
+      if (__DEV__) {
+        console.log('[Save Assignment Request]', JSON.stringify(requestBody, null, 2));
+      }
+
+      const response = await apiFetch(ENDPOINTS.STUDENT_ASSIGNMENT_UPDATE, {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+      });
+
+      if (__DEV__) {
+        console.log('[Save Assignment Response]', JSON.stringify(response, null, 2));
+      }
+
+      // Clear dirty flag for this submission since save succeeded
+      setDirtyMap((prev) => {
+        const updated = { ...prev };
+        delete updated[studentAssignmentId];
+        return updated;
+      });
+
+      // Update inputs from server response to reflect saved state
+      if (response?.data) {
+        const savedSubmission = response.data;
+        setMarksInputs((prev) => ({
+          ...prev,
+          [studentAssignmentId]: savedSubmission.obtainedMarks !== null && savedSubmission.obtainedMarks !== undefined 
+            ? String(savedSubmission.obtainedMarks) 
+            : '',
+        }));
+        setRemarksInputs((prev) => ({
+          ...prev,
+          [studentAssignmentId]: savedSubmission.facultyRemark || '',
+        }));
+      }
+
+      // Show user-friendly success message
+      const responseMessage = response?.message || 'Assignment saved successfully!';
+      
+      if (__DEV__) {
+        console.debug('[Save Assignment Response Data]', JSON.stringify(response, null, 2));
+      }
+      
+      Alert.alert(
+        'Success',
+        responseMessage,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Refresh data after successful save
+              fetchData();
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Error saving assignment:', error);
+      }
+      Alert.alert(
+        'Error',
+        'Failed to save assignment. Please try again.'
+      );
+    } finally {
+      setSavingId(null);
     }
   };
 
@@ -337,50 +542,129 @@ const AssignmentSubmissionsScreen = () => {
                     <Text style={styles.sectionTitle}>
                       Files ({submission.studentAssignmentUploadDtoList.length})
                     </Text>
-                    {submission.studentAssignmentUploadDtoList.map((file, fileIndex) => (
-                      <View key={file.studentAssignmentUploadId || fileIndex} style={styles.fileItem}>
-                        <AntDesign name="file1" size={20} color={COLORS.primary} />
-                        <View style={styles.fileInfo}>
-                          <Text style={styles.fileName} numberOfLines={1}>
-                            {file.originalFileName || 'Unknown file'}
-                          </Text>
-                          <Text style={styles.fileSize}>
-                            {formatFileSize(file.fileSizeBytes) || '0 B'} • {file.fileExtension || ''}
-                          </Text>
-                        </View>
-                      </View>
-                    ))}
+                    {submission.studentAssignmentUploadDtoList.map((file, fileIndex) => {
+                      const isDownloading = downloadingId === (file.studentAssignmentUploadId || file.originalFileName);
+                      const isImage = file.fileContentType?.startsWith('image');
+                      const hasBase64 = !!file.fileBase64String;
+                      
+                      return (
+                        <TouchableOpacity
+                          key={file.studentAssignmentUploadId || fileIndex}
+                          style={styles.fileItem}
+                          onPress={() => hasBase64 && handleDownload(file)}
+                          disabled={isDownloading || !hasBase64}
+                          activeOpacity={hasBase64 ? 0.7 : 1}
+                        >
+                          <View style={styles.fileIconContainer}>
+                            {isDownloading ? (
+                              <ActivityIndicator size="small" color={COLORS.primary} />
+                            ) : (
+                              <AntDesign
+                                name={isImage ? 'picture' : 'file1'}
+                                size={20}
+                                color={hasBase64 ? COLORS.primary : COLORS.gray2}
+                              />
+                            )}
+                          </View>
+                          <View style={styles.fileInfo}>
+                            <Text style={[styles.fileName, !hasBase64 && styles.fileNameDisabled]} numberOfLines={1}>
+                              {file.originalFileName || 'Unknown file'}
+                            </Text>
+                            <Text style={styles.fileSize}>
+                              {formatFileSize(file.fileSizeBytes) || '0 B'} • {file.fileExtension || ''}
+                            </Text>
+                          </View>
+                          {!isDownloading && hasBase64 && (
+                            <AntDesign name="download" size={18} color={COLORS.gray} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 )}
 
               {/* Marks and Faculty Remark */}
-              {(submission.obtainedMarks !== null && submission.obtainedMarks !== undefined ||
-                submission.facultyRemark ||
-                (submission.assignmentDto?.outOff !== undefined && submission.assignmentDto?.outOff !== null)) && (
-                <View style={styles.gradingSection}>
-                  <Text style={styles.sectionTitle}>Grading</Text>
-                  {submission.assignmentDto?.outOff !== undefined && submission.assignmentDto?.outOff !== null && (
-                    <View style={styles.marksRow}>
-                      <Text style={styles.marksLabel}>Total Marks:</Text>
-                      <Text style={styles.marksValue}>{String(submission.assignmentDto.outOff)}</Text>
-                    </View>
-                  )}
-                  {submission.obtainedMarks !== null && submission.obtainedMarks !== undefined && (
-                    <View style={styles.marksRow}>
-                      <Text style={styles.marksLabel}>Obtained Marks:</Text>
-                      <Text style={[styles.marksValue, styles.marksValueObtained]}>
-                        {String(submission.obtainedMarks)}
-                      </Text>
-                    </View>
-                  )}
-                  {submission.facultyRemark && (
-                    <View style={styles.remarkContainer}>
-                      <Text style={styles.remarkLabel}>Faculty Remark:</Text>
-                      <Text style={styles.remarkText}>{submission.facultyRemark}</Text>
-                    </View>
-                  )}
+              <View style={styles.gradingSection}>
+                <Text style={styles.sectionTitle}>Grading</Text>
+                {submission.assignmentDto?.outOff !== undefined && submission.assignmentDto?.outOff !== null && (
+                  <View style={styles.marksRow}>
+                    <Text style={styles.marksLabel}>Total Marks:</Text>
+                    <Text style={styles.marksValue}>{String(submission.assignmentDto.outOff)}</Text>
+                  </View>
+                )}
+                
+                {/* Obtained Marks Input */}
+                <View style={styles.inputRow}>
+                  <Text style={styles.inputLabel}>Obtained Marks:</Text>
+                  <TextInput
+                    style={styles.marksInput}
+                    value={marksInputs[submission.studentAssignmentId] || ''}
+                    onChangeText={(text) => {
+                      // Allow only numbers and decimal point
+                      const numericText = text.replace(/[^0-9.]/g, '');
+                      const id = submission.studentAssignmentId;
+                      setMarksInputs((prev) => ({
+                        ...prev,
+                        [id]: numericText,
+                      }));
+                      // Mark as dirty when user edits
+                      setDirtyMap((prev) => ({
+                        ...prev,
+                        [id]: true,
+                      }));
+                    }}
+                    placeholder="Enter marks"
+                    keyboardType="numeric"
+                    editable={savingId !== submission.studentAssignmentId}
+                  />
                 </View>
-              )}
+
+                {/* Faculty Remark Input */}
+                <View style={styles.inputRow}>
+                  <Text style={styles.inputLabel}>Faculty Remark:</Text>
+                  <TextInput
+                    style={styles.remarkInput}
+                    value={remarksInputs[submission.studentAssignmentId] || ''}
+                    onChangeText={(text) => {
+                      const id = submission.studentAssignmentId;
+                      setRemarksInputs((prev) => ({
+                        ...prev,
+                        [id]: text,
+                      }));
+                      // Mark as dirty when user edits
+                      setDirtyMap((prev) => ({
+                        ...prev,
+                        [id]: true,
+                      }));
+                    }}
+                    placeholder="Enter remark (optional)"
+                    multiline
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                    editable={savingId !== submission.studentAssignmentId}
+                  />
+                </View>
+
+                {/* Save Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.saveButton,
+                    savingId === submission.studentAssignmentId && styles.saveButtonDisabled,
+                  ]}
+                  onPress={() => handleSave(submission)}
+                  disabled={savingId === submission.studentAssignmentId}
+                  activeOpacity={0.7}
+                >
+                  {savingId === submission.studentAssignmentId ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <AntDesign name="save" size={18} color="#fff" />
+                      <Text style={styles.saveButtonText}>Save</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           ))
         )}
@@ -398,7 +682,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 60,
+    paddingTop: 16,
     paddingBottom: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -602,9 +886,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 8,
   },
+  fileIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
   fileInfo: {
     flex: 1,
-    marginLeft: 12,
   },
   fileName: {
     fontSize: 14,
@@ -615,6 +907,9 @@ const styles = StyleSheet.create({
   fileSize: {
     fontSize: 12,
     color: COLORS.gray,
+  },
+  fileNameDisabled: {
+    color: COLORS.gray2,
   },
   gradingSection: {
     marginTop: 8,
@@ -640,6 +935,52 @@ const styles = StyleSheet.create({
   },
   marksValueObtained: {
     color: '#4CAF50',
+  },
+  inputRow: {
+    marginBottom: 12,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: COLORS.gray,
+    fontWeight: '500',
+    marginBottom: 6,
+  },
+  marksInput: {
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#F8F9FA',
+    color: '#1A1A1A',
+  },
+  remarkInput: {
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    backgroundColor: '#F8F9FA',
+    color: '#1A1A1A',
+    minHeight: 80,
+  },
+  saveButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   emptyContainer: {
     flex: 1,

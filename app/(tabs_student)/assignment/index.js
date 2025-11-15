@@ -8,7 +8,11 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Platform,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
 import { router } from 'expo-router';
 import { apiFetch, ENDPOINTS } from '../../../services/apiService';
 import { COLORS } from '../../../constants';
@@ -18,6 +22,7 @@ const AssignmentScreen = () => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -40,6 +45,70 @@ const AssignmentScreen = () => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchData();
+  };
+
+  const handleDownload = async (attachment) => {
+    if (downloadingId) return;
+
+    if (!attachment.fileBase64String) {
+      Alert.alert('Download Failed', 'No file content available to download.');
+      return;
+    }
+
+    setDownloadingId(attachment.assignmentUploadId || attachment.originalFileName);
+
+    // Ensure file has proper extension
+    let fileName = attachment.originalFileName || 'download';
+    if (!fileName.includes('.') && attachment.fileExtension) {
+      fileName = fileName + attachment.fileExtension;
+    } else if (!fileName.includes('.') && !attachment.fileExtension) {
+      // Fallback: try to determine extension from content type
+      const ext = attachment.fileContentType?.split('/')[1] || 'bin';
+      fileName = fileName + '.' + ext;
+    }
+
+    const fileUri = FileSystem.cacheDirectory + fileName;
+
+    try {
+      await FileSystem.writeAsStringAsync(fileUri, attachment.fileBase64String, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      if (Platform.OS === 'android') {
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Required', 'Please grant permission to save files to your device.');
+          return;
+        }
+        await MediaLibrary.saveToLibraryAsync(fileUri);
+        Alert.alert('Success', 'File saved to your gallery or downloads folder.');
+      } else {
+        if (!(await Sharing.isAvailableAsync())) {
+          Alert.alert('Error', 'Sharing is not available on your device.');
+          return;
+        }
+        await Sharing.shareAsync(fileUri);
+      }
+    } catch (error) {
+      console.error('Error during file download/saving:', error);
+      Alert.alert('Download Error', 'Could not save the file.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0 || isNaN(bytes)) return '0 B';
+    try {
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      const size = Math.round(bytes / Math.pow(k, i) * 100) / 100;
+      if (isNaN(size) || !isFinite(size)) return '0 B';
+      return String(size) + ' ' + sizes[i];
+    } catch (e) {
+      return '0 B';
+    }
   };
 
   if (isLoading) {
@@ -153,6 +222,44 @@ const AssignmentScreen = () => {
                           {attachments.length} {attachments.length === 1 ? 'attachment' : 'attachments'}
                         </Text>
                       </View>
+                      {attachments.map((attachment, attIndex) => {
+                        const isDownloading = downloadingId === (attachment.assignmentUploadId || attachment.originalFileName);
+                        const isImage = attachment.fileContentType?.startsWith('image');
+                        const hasBase64 = !!attachment.fileBase64String;
+                        
+                        return (
+                          <TouchableOpacity
+                            key={attachment.assignmentUploadId || attIndex}
+                            style={styles.attachmentItem}
+                            onPress={() => hasBase64 && handleDownload(attachment)}
+                            disabled={isDownloading || !hasBase64}
+                            activeOpacity={hasBase64 ? 0.7 : 1}
+                          >
+                            <View style={styles.attachmentIconContainer}>
+                              {isDownloading ? (
+                                <ActivityIndicator size="small" color={COLORS.primary} />
+                              ) : (
+                                <AntDesign
+                                  name={isImage ? 'picture' : 'file1'}
+                                  size={16}
+                                  color={hasBase64 ? COLORS.primary : COLORS.gray2}
+                                />
+                              )}
+                            </View>
+                            <View style={styles.attachmentInfo}>
+                              <Text style={[styles.attachmentName, !hasBase64 && styles.attachmentNameDisabled]} numberOfLines={1}>
+                                {attachment.originalFileName || 'Unknown File'}
+                              </Text>
+                              <Text style={styles.attachmentSize}>
+                                {formatFileSize(attachment.fileSizeBytes)} • {attachment.fileExtension || ''}
+                              </Text>
+                            </View>
+                            {!isDownloading && hasBase64 && (
+                              <AntDesign name="download" size={16} color={COLORS.gray} />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
                     </View>
                   )}
 
@@ -292,11 +399,46 @@ const styles = StyleSheet.create({
   attachmentsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 8,
   },
   attachmentsLabel: {
     fontSize: 12,
     color: COLORS.gray,
     marginLeft: 6,
+  },
+  attachmentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    marginTop: 6,
+  },
+  attachmentIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  attachmentInfo: {
+    flex: 1,
+  },
+  attachmentName: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 2,
+  },
+  attachmentSize: {
+    fontSize: 11,
+    color: COLORS.gray,
+  },
+  attachmentNameDisabled: {
+    color: COLORS.gray2,
   },
   cardFooter: {
     alignItems: 'flex-end',

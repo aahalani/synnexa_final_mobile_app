@@ -1,16 +1,32 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  Platform,
+  RefreshControl,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
+import { apiFetch, apiUploadFormData, ENDPOINTS } from '../../../services/apiService';
+import { getUser } from '../../../services/authService';
 import { COLORS } from '../../../constants';
 import { AntDesign } from '@expo/vector-icons';
 
 const LectureContentDetailsScreen = () => {
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [uploadingLectureId, setUploadingLectureId] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState({}); // { lectureContentId: [files] }
+  const [refreshing, setRefreshing] = useState(false);
+  const [lectureData, setLectureData] = useState(null);
   const params = useLocalSearchParams();
   const batch = useMemo(() => {
     try {
@@ -28,15 +44,45 @@ const LectureContentDetailsScreen = () => {
       return null;
     }
   }, [params.course]);
-  const lectureData = useMemo(() => {
+  // Initialize lectureData from params
+  useEffect(() => {
     try {
-      return params.lectureData ? JSON.parse(params.lectureData) : null;
+      const parsedData = params.lectureData ? JSON.parse(params.lectureData) : null;
+      if (parsedData) {
+        setLectureData(parsedData);
+      }
     } catch (error) {
       console.error('Error parsing lectureData param:', error);
-      return null;
     }
   }, [params.lectureData]);
+
   const dateRange = params.dateRange || '';
+
+  const handleRefresh = useCallback(async () => {
+    if (!batch || !course || !dateRange) {
+      setRefreshing(false);
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      const response = await apiFetch(ENDPOINTS.FACULTY_LECTURE_CONTENT_SEARCH, {
+        method: 'POST',
+        body: JSON.stringify({
+          batchId: batch.batchId,
+          courseId: course.courseId,
+          lectureContentDateRangeStr: dateRange,
+        }),
+      });
+
+      setLectureData(response);
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Failed to refresh lecture content.');
+      console.error('Error refreshing lecture content:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [batch, course, dateRange]);
 
   const formatFileSize = (bytes) => {
     if (!bytes || bytes === 0 || isNaN(bytes)) return '0 B';
@@ -66,6 +112,214 @@ const LectureContentDetailsScreen = () => {
     }
   };
 
+  const handleDownload = async (file) => {
+    if (downloadingId) return;
+
+    if (!file.fileBase64String) {
+      Alert.alert('Download Failed', 'No file content available to download.');
+      return;
+    }
+
+    setDownloadingId(file.lectureContentUploadId || file.originalFileName);
+
+    // Ensure file has proper extension
+    let fileName = file.originalFileName || 'download';
+    if (!fileName.includes('.') && file.fileExtension) {
+      fileName = fileName + file.fileExtension;
+    } else if (!fileName.includes('.') && !file.fileExtension) {
+      // Fallback: try to determine extension from content type
+      const ext = file.fileContentType?.split('/')[1] || 'bin';
+      fileName = fileName + '.' + ext;
+    }
+
+    const fileUri = FileSystem.cacheDirectory + fileName;
+
+    try {
+      await FileSystem.writeAsStringAsync(fileUri, file.fileBase64String, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      if (Platform.OS === 'android') {
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Required', 'Please grant permission to save files to your device.');
+          return;
+        }
+        await MediaLibrary.saveToLibraryAsync(fileUri);
+        Alert.alert('Success', 'File saved to your gallery or downloads folder.');
+      } else {
+        if (!(await Sharing.isAvailableAsync())) {
+          Alert.alert('Error', 'Sharing is not available on your device.');
+          return;
+        }
+        await Sharing.shareAsync(fileUri);
+      }
+    } catch (error) {
+      console.error('Error during file download/saving:', error);
+      Alert.alert('Download Error', 'Could not save the file.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const pickDocument = async (lectureContentId) => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        multiple: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const files = result.assets.map((asset) => ({
+          name: asset.name,
+          uri: asset.uri,
+          type: asset.mimeType || 'application/octet-stream',
+          size: asset.size,
+        }));
+        setSelectedFiles((prev) => ({
+          ...prev,
+          [lectureContentId]: [...(prev[lectureContentId] || []), ...files],
+        }));
+      }
+    } catch (err) {
+      console.error('Error picking document:', err);
+      Alert.alert('Error', 'Failed to pick document. Please try again.');
+    }
+  };
+
+  const takePhoto = async (lectureContentId) => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission Required', "You've refused to allow this app to access your camera!");
+      return;
+    }
+
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 1,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const fileName = `photo_${Date.now()}.jpg`;
+        const newPath = FileSystem.documentDirectory + fileName;
+
+        await FileSystem.moveAsync({
+          from: asset.uri,
+          to: newPath,
+        });
+
+        const fileInfo = {
+          name: fileName,
+          uri: newPath,
+          type: 'image/jpeg',
+          size: asset.fileSize || 0,
+        };
+        setSelectedFiles((prev) => ({
+          ...prev,
+          [lectureContentId]: [...(prev[lectureContentId] || []), fileInfo],
+        }));
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to capture photo. Please try again.');
+    }
+  };
+
+  const showFilePickerOptions = (lectureContentId) => {
+    Alert.alert(
+      'Select File',
+      'Choose how you want to add a file',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Pick Document', onPress: () => pickDocument(lectureContentId) },
+        { text: 'Take Photo', onPress: () => takePhoto(lectureContentId) },
+      ]
+    );
+  };
+
+  const removeFile = (lectureContentId, index) => {
+    setSelectedFiles((prev) => {
+      const files = prev[lectureContentId] || [];
+      const newFiles = files.filter((_, i) => i !== index);
+      if (newFiles.length === 0) {
+        const { [lectureContentId]: removed, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [lectureContentId]: newFiles };
+    });
+  };
+
+  const handleUpload = async (lectureContentId) => {
+    const files = selectedFiles[lectureContentId];
+    if (!files || files.length === 0) {
+      Alert.alert('Error', 'Please select at least one file to upload.');
+      return;
+    }
+
+    if (!lectureContentId) {
+      Alert.alert('Error', 'Missing lecture content ID. Cannot upload.');
+      return;
+    }
+
+    // Find the lecture data
+    const lecture = lectureContentList.find((lec) => lec.lectureContentId === lectureContentId);
+    if (!lecture) {
+      Alert.alert('Error', 'Lecture content not found.');
+      return;
+    }
+
+    setUploadingLectureId(lectureContentId);
+
+    try {
+      // Create FormData with files only
+      // Note: lectureContentId must be sent as a query parameter, not form data
+      const formData = new FormData();
+
+      // Add all files with 'files' field name (matching API expectation)
+      files.forEach((file, index) => {
+        formData.append('files', {
+          uri: file.uri,
+          name: file.name,
+          type: file.type,
+        });
+      });
+
+
+      // Use UploadLectureContentDocuments endpoint with lectureContentId as query parameter
+      const endpoint = `${ENDPOINTS.FACULTY_LECTURE_CONTENT_UPLOAD_DOCUMENTS}?${new URLSearchParams({ lectureContentId: String(lectureContentId) })}`;
+      await apiUploadFormData(endpoint, formData);
+
+      // Clear selected files for this lecture
+      setSelectedFiles((prev) => {
+        const { [lectureContentId]: removed, ...rest } = prev;
+        return rest;
+      });
+      
+      Alert.alert(
+        'Success',
+        'Files uploaded successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Refresh the data to show newly uploaded files
+              handleRefresh();
+            },
+          },
+        ]
+      );
+    } catch (err) {
+      console.error('Upload failed:', err);
+      Alert.alert('Upload Failed', err.message || 'Failed to upload files. Please try again.');
+    } finally {
+      setUploadingLectureId(null);
+    }
+  };
+
   const lectureContentList = lectureData?.lectureContentDtoList || [];
 
   return (
@@ -90,6 +344,9 @@ const LectureContentDetailsScreen = () => {
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
       >
         {/* Info Card */}
         <View style={styles.infoCard}>
@@ -151,36 +408,102 @@ const LectureContentDetailsScreen = () => {
                   </View>
                 </View>
 
+                {/* Upload Files Section */}
+                <View style={styles.uploadSection}>
+                  <View style={styles.uploadSectionHeader}>
+                    <Text style={styles.uploadSectionTitle}>Upload Files</Text>
+                    <TouchableOpacity
+                      style={styles.addFileButton}
+                      onPress={() => showFilePickerOptions(lecture.lectureContentId)}
+                      disabled={uploadingLectureId === lecture.lectureContentId}
+                    >
+                      <AntDesign name="plus" size={16} color={COLORS.primary} />
+                      <Text style={styles.addFileButtonText}>Add File</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {/* Selected Files Preview */}
+                  {selectedFiles[lecture.lectureContentId] && selectedFiles[lecture.lectureContentId].length > 0 && (
+                    <View style={styles.selectedFilesContainer}>
+                      {selectedFiles[lecture.lectureContentId].map((file, index) => (
+                        <View key={index} style={styles.selectedFileItem}>
+                          <AntDesign name="file1" size={16} color={COLORS.primary} />
+                          <Text style={styles.selectedFileName} numberOfLines={1}>
+                            {file.name}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => removeFile(lecture.lectureContentId, index)}
+                            style={styles.removeFileButton}
+                          >
+                            <AntDesign name="close" size={16} color={COLORS.gray} />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                      <TouchableOpacity
+                        style={[styles.uploadButton, uploadingLectureId === lecture.lectureContentId && styles.uploadButtonDisabled]}
+                        onPress={() => handleUpload(lecture.lectureContentId)}
+                        disabled={uploadingLectureId === lecture.lectureContentId}
+                      >
+                        {uploadingLectureId === lecture.lectureContentId ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <>
+                            <AntDesign name="upload" size={16} color="#fff" />
+                            <Text style={styles.uploadButtonText}>Upload Files</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+
                 {/* Uploaded Files */}
                 {lecture.lectureContentUploadDtoList && lecture.lectureContentUploadDtoList.length > 0 && (
                   <View style={styles.filesSection}>
                     <Text style={styles.filesSectionTitle}>
                       Files ({lecture.lectureContentUploadDtoList.length})
                     </Text>
-                    {lecture.lectureContentUploadDtoList.map((file, fileIndex) => (
-                      <View key={file.lectureContentUploadId || fileIndex} style={styles.fileItem}>
-                        <View style={styles.fileIconContainer}>
-                          <AntDesign 
-                            name={
-                              file.fileExtension?.includes('.pdf') ? 'pdffile1' :
-                              file.fileExtension?.includes('.doc') || file.fileExtension?.includes('.docx') ? 'file1' :
-                              file.fileExtension?.includes('.jpg') || file.fileExtension?.includes('.jpeg') || file.fileExtension?.includes('.png') ? 'picture' :
-                              'file1'
-                            } 
-                            size={20} 
-                            color={COLORS.primary} 
-                          />
-                        </View>
-                        <View style={styles.fileInfo}>
-                          <Text style={styles.fileName} numberOfLines={1}>
-                            {file.originalFileName || 'Unknown File'}
-                          </Text>
-                          <Text style={styles.fileDetails}>
-                            {formatFileSize(file.fileSizeBytes)} • {file.fileExtension || 'No extension'}
-                          </Text>
-                        </View>
-                      </View>
-                    ))}
+                    {lecture.lectureContentUploadDtoList.map((file, fileIndex) => {
+                      const hasBase64 = !!file.fileBase64String;
+                      const isDownloading = downloadingId === (file.lectureContentUploadId || file.originalFileName);
+                      return (
+                        <TouchableOpacity
+                          key={file.lectureContentUploadId || fileIndex}
+                          style={styles.fileItem}
+                          onPress={() => hasBase64 && handleDownload(file)}
+                          disabled={isDownloading || !hasBase64}
+                          activeOpacity={hasBase64 ? 0.7 : 1}
+                        >
+                          <View style={styles.fileIconContainer}>
+                            {isDownloading ? (
+                              <ActivityIndicator size="small" color={COLORS.primary} />
+                            ) : (
+                              <AntDesign 
+                                name={
+                                  file.fileExtension?.includes('.pdf') ? 'pdffile1' :
+                                  file.fileExtension?.includes('.doc') || file.fileExtension?.includes('.docx') ? 'file1' :
+                                  file.fileExtension?.includes('.jpg') || file.fileExtension?.includes('.jpeg') || file.fileExtension?.includes('.png') ? 'picture' :
+                                  'file1'
+                                } 
+                                size={20} 
+                                color={hasBase64 ? COLORS.primary : COLORS.gray2} 
+                              />
+                            )}
+                          </View>
+                          <View style={styles.fileInfo}>
+                            <Text style={[styles.fileName, !hasBase64 && styles.fileNameDisabled]} numberOfLines={1}>
+                              {file.originalFileName || 'Unknown File'}
+                            </Text>
+                            <Text style={styles.fileDetails}>
+                              {formatFileSize(file.fileSizeBytes)} • {file.fileExtension || 'No extension'}
+                            </Text>
+                          </View>
+                          {!isDownloading && hasBase64 && (
+                            <AntDesign name="download" size={18} color={COLORS.gray} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 )}
 
@@ -327,6 +650,79 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.gray,
   },
+  uploadSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F5F5F5',
+  },
+  uploadSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  uploadSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  addFileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#F0F7FF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  addFileButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginLeft: 4,
+  },
+  selectedFilesContainer: {
+    marginTop: 8,
+  },
+  selectedFileItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  selectedFileName: {
+    fontSize: 12,
+    color: '#333',
+    flex: 1,
+    marginLeft: 8,
+  },
+  removeFileButton: {
+    padding: 4,
+  },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  uploadButtonDisabled: {
+    opacity: 0.6,
+  },
+  uploadButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginLeft: 6,
+  },
   filesSection: {
     marginTop: 16,
     paddingTop: 16,
@@ -365,6 +761,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
     marginBottom: 2,
+  },
+  fileNameDisabled: {
+    color: COLORS.gray2,
   },
   fileDetails: {
     fontSize: 12,

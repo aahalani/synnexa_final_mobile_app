@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,8 @@ import {
   Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { apiFetch, ENDPOINTS } from '../../../services/apiService';
+import { apiFetch, apiUploadFormData, ENDPOINTS } from '../../../services/apiService';
+import { getUser } from '../../../services/authService';
 import { COLORS } from '../../../constants';
 import { AntDesign } from '@expo/vector-icons';
 
@@ -21,6 +22,8 @@ const MarkAttendanceDetailsScreen = () => {
   const dateRange = params.dateRange || '';
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [facultyId, setFacultyId] = useState(null);
+  const [isLoadingFaculty, setIsLoadingFaculty] = useState(true);
   const [attendanceState, setAttendanceState] = useState(() => {
     // Initialize attendance state from attendanceDtoList
     const initialState = {};
@@ -32,6 +35,27 @@ const MarkAttendanceDetailsScreen = () => {
     }
     return initialState;
   });
+
+  // Get facultyId from user data
+  useEffect(() => {
+    const fetchFacultyId = async () => {
+      setIsLoadingFaculty(true);
+      try {
+        const userData = await getUser();
+        // Try to get facultyId from facultyDto first, then fallback to userId
+        if (userData?.facultyDto?.facultyId) {
+          setFacultyId(userData.facultyDto.facultyId);
+        } else if (userData?.userId) {
+          setFacultyId(userData.userId);
+        }
+      } catch (error) {
+        console.error('Error fetching faculty ID:', error);
+      } finally {
+        setIsLoadingFaculty(false);
+      }
+    };
+    fetchFacultyId();
+  }, []);
 
   // Get students from studentRegistrationDtoList
   const students = useMemo(() => {
@@ -79,71 +103,162 @@ const MarkAttendanceDetailsScreen = () => {
     return dateStr;
   };
 
+  const formatDateForAPI = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      if (dateStr.includes('T')) {
+        // ISO format: "2024-02-01T00:00:00"
+        const date = new Date(dateStr);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        // Format: DD/MM/YYYY
+        return `${day}/${month}/${year}`;
+      } else if (dateStr.includes('/')) {
+        // Already in DD/MM/YYYY format
+        return dateStr;
+      }
+    } catch (e) {
+      console.error('Error formatting date for API:', e);
+    }
+    return dateStr;
+  };
+
   const handleSubmit = useCallback(async () => {
     if (!batch || !course || !attendanceData) {
       Alert.alert('Error', 'Missing required data.');
       return;
     }
 
-    // Build attendanceDtoList from current state
+    if (!facultyId) {
+      Alert.alert('Error', 'Faculty information is missing. Please try again.');
+      return;
+    }
+
+    // Calculate attendance percentage for each student
+    const studentCourseData = [];
     const attendanceDtoList = [];
-    
-    students.forEach((student) => {
+
+    students.forEach((student, studentIndex) => {
+      let presentCount = 0;
+      const totalDates = dates.length;
+
+      // Build attendance records for this student
       dates.forEach((date) => {
         const isPresent = getAttendanceStatus(student.studentCourseId, date.id);
-        // Find existing attendance record if any
-        const existingAttendance = attendanceData.attendanceDtoList?.find(
-          (a) => a.studentCourseId === student.studentCourseId && a.attendanceDateIdStr === date.id
-        );
+        if (isPresent) {
+          presentCount++;
+        }
 
+        const attendanceDateStr = formatDateForAPI(date.courseDate || '');
+
+        // Add attendance record
         attendanceDtoList.push({
-          studentCourseId: student.studentCourseId,
           studentId: student.studentId,
-          attendanceDate: date.courseDate,
-          attendanceDateStr: date.courseDate ? new Date(date.courseDate).toLocaleDateString('en-GB') : '',
-          attendanceDateIdStr: date.id,
-          attendanceId: existingAttendance?.attendanceId || '00000000-0000-0000-0000-000000000000',
           batchId: batch.batchId,
           courseId: course.courseId,
-          facultyId: null, // Will be set by backend
-          isPresent: isPresent,
-          createdBy: 0,
-          createdOn: existingAttendance?.createdOn || '0001-01-01T00:00:00',
-          modifiedBy: null,
-          modifiedOn: null,
-          attendanceCount: 0,
-          attendancePercentage: 0,
-          studentFullName: student.studentFullName,
+          facultyId: facultyId,
+          attendanceDateStr: attendanceDateStr,
+          isPresent: Boolean(isPresent), // Always include isPresent as a boolean
         });
+      });
+
+      // Calculate attendance percentage
+      const attendancePercentage = totalDates > 0 ? (presentCount / totalDates) * 100 : 0;
+
+      // Add student course data
+      studentCourseData.push({
+        studentCourseId: student.studentCourseId,
+        studentId: student.studentId,
+        courseId: course.courseId,
+        attendancePercentage: parseFloat(attendancePercentage.toFixed(2)),
       });
     });
 
+    // Build request body - try JSON format first (415 error suggests API expects JSON)
+    const requestBody = {
+      studentCourseDtoList: studentCourseData.map((sc) => ({
+        studentCourseId: sc.studentCourseId,
+        studentId: sc.studentId,
+        courseId: sc.courseId,
+        attendancePercentage: sc.attendancePercentage,
+      })),
+      attendanceDtoList: attendanceDtoList.map((att) => ({
+        studentId: att.studentId,
+        batchId: att.batchId,
+        courseId: att.courseId,
+        facultyId: att.facultyId,
+        attendanceDateStr: att.attendanceDateStr,
+        isPresent: Boolean(att.isPresent), // Ensure boolean conversion
+      })),
+      attendanceDateFromToStr: dateRange,
+    };
+
     setIsSubmitting(true);
     try {
-      const response = await apiFetch(ENDPOINTS.FACULTY_ATTENDANCE_SUBMIT, {
-        method: 'POST',
-        body: JSON.stringify({
-          batchId: batch.batchId,
-          courseId: course.courseId,
-          attendanceDateFromToStr: dateRange,
-          attendanceDtoList: attendanceDtoList,
-        }),
-      });
+      console.log('[Attendance Submit Request]', JSON.stringify(requestBody, null, 2));
+
+      // Try JSON first (most .NET APIs expect JSON for complex objects)
+      let response;
+      try {
+        response = await apiFetch(ENDPOINTS.FACULTY_ATTENDANCE_SUBMIT, {
+          method: 'POST',
+          body: JSON.stringify(requestBody),
+        });
+      } catch (jsonError) {
+        // If JSON fails with 415, try FormData as fallback
+        if (jsonError.message?.includes('415') || jsonError.message?.includes('Unsupported Media Type')) {
+          console.log('[Attendance Submit] JSON failed, trying FormData...');
+          const formData = new FormData();
+
+          // Add StudentCourseDtoList
+          studentCourseData.forEach((studentCourse, index) => {
+            formData.append(`StudentCourseDtoList[${index}].StudentCourseId`, studentCourse.studentCourseId);
+            formData.append(`StudentCourseDtoList[${index}].StudentId`, String(studentCourse.studentId));
+            formData.append(`StudentCourseDtoList[${index}].CourseId`, String(studentCourse.courseId));
+            formData.append(`StudentCourseDtoList[${index}].AttendancePercentage`, String(studentCourse.attendancePercentage));
+          });
+
+          // Add AttendanceDtoList
+          attendanceDtoList.forEach((attendance, index) => {
+            formData.append(`AttendanceDtoList[${index}].StudentId`, String(attendance.studentId));
+            formData.append(`AttendanceDtoList[${index}].BatchId`, String(attendance.batchId));
+            formData.append(`AttendanceDtoList[${index}].CourseId`, String(attendance.courseId));
+            formData.append(`AttendanceDtoList[${index}].FacultyId`, String(attendance.facultyId));
+            formData.append(`AttendanceDtoList[${index}].AttendanceDateStr`, attendance.attendanceDateStr);
+            // Always include isPresent as a boolean
+            formData.append(`AttendanceDtoList[${index}].IsPresent`, Boolean(attendance.isPresent) ? 'True' : 'False');
+          });
+
+          response = await apiUploadFormData(ENDPOINTS.FACULTY_ATTENDANCE_SUBMIT, formData);
+        } else {
+          throw jsonError;
+        }
+      }
 
       console.log('[Attendance Submit API Response]', JSON.stringify(response, null, 2));
-      Alert.alert('Success', 'Attendance marked successfully!', [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]);
+      
+      // Show success message
+      const responseMessage = response?.message || 'Attendance marked successfully!';
+      
+      Alert.alert(
+        'Success',
+        responseMessage,
+        [
+          {
+            text: 'OK',
+            onPress: () => router.back(),
+          },
+        ]
+      );
     } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to submit attendance.');
       console.error('Error submitting attendance:', error);
+      const errorMessage = error.message || 'Failed to submit attendance.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsSubmitting(false);
     }
-  }, [batch, course, attendanceData, students, dates, attendanceState, dateRange]);
+  }, [batch, course, attendanceData, students, dates, attendanceState, dateRange, facultyId]);
 
   if (!attendanceData || !students.length || !dates.length) {
     return (
@@ -187,7 +302,21 @@ const MarkAttendanceDetailsScreen = () => {
             {course?.courseDisplayName || course?.name || 'Course'}
           </Text>
         </View>
-        <View style={styles.placeholder} />
+        <TouchableOpacity
+          style={[styles.headerSubmitButton, (isSubmitting || isLoadingFaculty) && styles.headerSubmitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={isSubmitting || isLoadingFaculty}
+          activeOpacity={0.7}
+        >
+          {isSubmitting || isLoadingFaculty ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <AntDesign name="checkcircle" size={18} color="#fff" />
+              <Text style={styles.headerSubmitButtonText}>Save</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Info Card */}
@@ -271,24 +400,6 @@ const MarkAttendanceDetailsScreen = () => {
         </ScrollView>
       </View>
 
-      {/* Submit Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-          activeOpacity={0.7}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <>
-              <AntDesign name="checkcircle" size={20} color="#fff" />
-              <Text style={styles.submitButtonText}>Submit Attendance</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -302,7 +413,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 60,
+    paddingTop: 16,
     paddingBottom: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -326,7 +437,34 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   placeholder: {
-    width: 40,
+    width: 0,
+  },
+  headerSubmitButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 80,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  headerSubmitButtonDisabled: {
+    opacity: 0.6,
+  },
+  headerSubmitButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 6,
   },
   infoCard: {
     flexDirection: 'row',
@@ -348,12 +486,13 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     flex: 1,
+    minHeight: 0, // Important for nested ScrollViews
   },
   content: {
     flex: 1,
   },
   tableScrollContent: {
-    flexGrow: 1,
+    paddingBottom: 20, // Add padding at bottom of scrollable content
   },
   tableHeader: {
     flexDirection: 'row',
@@ -418,29 +557,6 @@ const styles = StyleSheet.create({
   },
   presentCell: {
     backgroundColor: '#E8F5E9',
-  },
-  footer: {
-    padding: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
-  },
-  submitButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
   },
   emptyContainer: {
     flex: 1,
